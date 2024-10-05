@@ -33,6 +33,7 @@ def generate_assets(hf_token, payload):
 def get_b_rolls(concept, num_b_rolls, hf_token):
     """
     Generates a specified number of B-roll images based on a concept and saves them in a directory named after the concept.
+    Ensures unique keywords per category.
     """
     # Define categories and keywords
     categories = {
@@ -49,6 +50,10 @@ def get_b_rolls(concept, num_b_rolls, hf_token):
         "Programming Concepts": ["Algorithm", "Debugging", "Syntax", "Automation"]
     }
 
+    # Variations to introduce more randomness in image prompts
+    environment_variations = ["during sunset", "at night", "in a futuristic setting", "on another planet", "in a bustling city", "in a calm village"]
+    perspectives = ["close-up", "wide-angle view", "aerial view", "from the ground up", "inside-out view"]
+
     b_rolls = []
     for category, keywords in categories.items():
         num_images = 0
@@ -58,15 +63,24 @@ def get_b_rolls(concept, num_b_rolls, hf_token):
         if not os.path.isdir(category_dir):
             os.mkdir(category_dir)
 
+        # Shuffle the keywords to ensure they are used randomly and uniquely
+        random.shuffle(keywords)
+
         while num_images < num_b_rolls:
             try:
                 # Progress update
                 print(f"\nStarting generation for {category} image {num_images + 1} / {num_b_rolls}")
 
-                # Randomly select a keyword from the category
-                keyword = random.choice(keywords)
-                prompt = {"inputs": f"A detailed image of {category.lower()} featuring '{keyword}'."}
-                
+                # Select the next keyword from the shuffled list (ensuring it's unique)
+                keyword = keywords.pop(0)  # Pop ensures the same keyword isn't reused
+                environment = random.choice(environment_variations)
+                perspective = random.choice(perspectives)
+
+                # Enhanced prompt to avoid repetition
+                prompt = {
+                    "inputs": f"A detailed image of {category.lower()} showcasing '{keyword}', {perspective}, {environment}."
+                }
+
                 # Generate the image asset
                 print(f"Generating image with prompt: {prompt['inputs']}...")
                 content = generate_assets(hf_token=hf_token, payload=prompt)
