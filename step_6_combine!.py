@@ -236,6 +236,114 @@ def process_script_cleaned(script, keyword_list):
 
     
 
+import re
+import logging
+
+def update_highlight_times(srt_file, lines_to_highlight):
+    """
+    Sets the beginning times for the highlights in the SRT file based on the provided array of lines.
+
+    Parameters:
+    srt_file (str): The path to the SRT file.
+    lines_to_highlight (list): A list of strings (lines) to highlight.
+
+    Returns:
+    list: A list of tuples where each tuple contains (highlighted line, start time in seconds).
+    """
+    
+    # Read the SRT file and parse its contents
+    with open(srt_file, 'r', encoding='utf-8') as file:
+        srt_lines = file.readlines()
+
+    # Regex pattern to extract time and text from SRT file
+    time_pattern = re.compile(r'(\d{2}:\d{2}:\d{2},\d{3}) --> (\d{2}:\d{2}:\d{2},\d{3})')
+    srt_entries = []
+
+    current_time = None
+    current_text = ""
+
+    for line in srt_lines:
+        line = line.strip()  # Strip leading and trailing whitespace
+
+        if time_pattern.match(line):  # This line contains the time range
+            # When a new time block starts, save the previous block if it exists
+            if current_time and current_text:
+                # Store as a tuple of (start time, text)
+                srt_entries.append((current_time, current_text.strip()))
+                current_text = ""  # Reset text for the next block
+
+            # Capture the start time
+            current_time = time_pattern.match(line).group(1)
+        elif line and not line.isdigit():  # Only add text lines, not empty or index lines
+            current_text += " " + line
+        elif not line and current_time and current_text:
+            # When we hit a blank line after text, we save the current block
+            srt_entries.append((current_time, current_text.strip()))
+            current_text = ""
+            current_time = None
+
+    # Check for the last entry
+    if current_time and current_text:
+        srt_entries.append((current_time, current_text.strip()))
+
+    # Helper function to convert SRT time format to seconds
+    def srt_time_to_seconds(srt_time):
+        hours, minutes, seconds_millis = srt_time.split(':')
+        seconds, millis = seconds_millis.split(',')
+        return int(hours) * 3600 + int(minutes) * 60 + int(seconds) + int(millis) / 1000
+
+    # Sliding window match function with special handling for <u> tags
+    def sliding_window_match(srt_text, key_words):
+        """
+        Perform a sliding window match for consecutive words in the srt_text.
+        Tries to match pairs of words and progressively widen the match window if no match is found.
+        """
+        srt_words = srt_text.split()
+        key_length = len(key_words)
+
+        # Start with pairs of words and widen the window progressively
+        for window_size in range(2, key_length + 1):  # Start with 2-word windows
+            for i in range(key_length - window_size + 1):
+                key_window = " ".join(key_words[i:i + window_size])  # Get sliding window of key words
+
+                for j in range(len(srt_words) - window_size + 1):
+                    srt_window = " ".join(srt_words[j:j + window_size])  # Get sliding window of srt words
+
+                    # Check for regular match or matches with <u> tags
+                    if (
+                        key_window in srt_window or  # Regular match
+                        any(
+                            f"<u>{word}</u>" in srt_window for word in key_words[i:i + window_size]
+                        )
+                    ):
+                        return True
+        return False
+
+    # Initialize a result list to store matched lines and their start times
+    result = []
+
+    # Iterate over each line in the array
+    for line in lines_to_highlight:
+        words = line.split()  # Split the line into words
+        found = False  # Flag to indicate if a match was found
+
+        # Try different word windows in SRT entries
+        for entry in srt_entries:
+            srt_time, srt_text = entry  # Unpack the tuple
+
+            # Perform a sliding window match with the SRT text
+            if sliding_window_match(srt_text, words):
+                highlight_time = srt_time_to_seconds(srt_time)
+                result.append((line, highlight_time))  # Store the result as (line, start time)
+                found = True  # Set flag to indicate a match was found
+                break
+
+        if not found:
+            logging.warning(f"Could not find a match for: {line}")
+            result.append((line, None))  # Append None for lines that weren't matched
+
+    return result
+
 
 
 def assemble_video(image_paths, voice_over_path, music_path, output_path):
@@ -257,14 +365,6 @@ def assemble_video(image_paths, voice_over_path, music_path, output_path):
     # Define the duration for crossfades between clips (in seconds)
     crossfade_duration = 1  # Adjust as needed
 
-    # # Load subtitles
-    # try:
-    #     with open(subtitles_path, 'r') as f:
-    #         subtitles = json.load(f)
-    # except Exception as e:
-    #     logging.error(f"Failed to load subtitles: {e}")
-    #     subtitles = []
-
     # Load Voice-Over Audio first to determine its duration
     try:
         voice_over = AudioFileClip(voice_over_path)
@@ -276,7 +376,7 @@ def assemble_video(image_paths, voice_over_path, music_path, output_path):
     if voice_over:
         try:
             # Create a 1-second silent audio clip
-            silence = AudioClip(lambda t: 0, duration=1).set_fps(voice_over.fps)
+            silence = AudioFileClip(lambda t: 0, duration=1).set_fps(voice_over.fps)
             # Concatenate the silence to the voice-over
             voice_over_extended = concatenate_audioclips([voice_over, silence])
         except Exception as e:
@@ -285,44 +385,17 @@ def assemble_video(image_paths, voice_over_path, music_path, output_path):
     else:
         voice_over_extended = None
 
-    # # Determine the total duration of the video based on subtitles and extended voice-over
-    # subtitles = False
-    # if subtitles:
-    #     subtitles_max_end = max(sub['end'] for sub in subtitles)
-    # else:
-    subtitles_max_end = 0
-
+    # Determine the total duration based on voice-over
     if voice_over_extended:
-        voice_over_duration = voice_over_extended.duration
+        total_duration = voice_over_extended.duration
     else:
-        voice_over_duration = 0
-
-    # Calculate total_duration without buffer
-    total_duration = voice_over_duration
-
-    logging.debug(f"Voice-Over Extended Duration: {voice_over_duration} seconds")
-    logging.debug(f"Total Duration: {total_duration} seconds")
-
-    # TODO: Combine the videos and the images together (if we have a 4 sec vid, then have a 2 sec image to go along side it that way we have a 1 minuet video
-    # with exactly 10 of these sets of images and videos.)
-    # Calculate the duration each image will be displayed # WE HAVE TO CHANGE THIS
-    # Change this also depending on the video length
-    num_images = len(image_paths)
-    if num_images > 0:
-        # Adjust image_duration to account for crossfades 
-        # TODO: Change the duration fo the video, based on the sentence length
-        image_duration = (total_duration + crossfade_duration * (num_images - 1)) / num_images 
-    else:
-        logging.error("No images provided to assemble into video.")
-        return
-
-    logging.debug(f"Image Duration: {image_duration} seconds")
+        total_duration = 0
 
     # Create Image Clips with crossfade transitions
     clips = []
     for idx, image_path in enumerate(image_paths):
         try:
-            clip = ImageClip(image_path).set_duration(image_duration)
+            clip = ImageClip(image_path).set_duration(total_duration / len(image_paths))
             # Apply crossfadein to all clips except the first
             if idx != 0:
                 clip = clip.crossfadein(crossfade_duration)
@@ -334,7 +407,7 @@ def assemble_video(image_paths, voice_over_path, music_path, output_path):
         logging.error("No valid image clips were created.")
         return
 
-    # Concatenate clips with crossfade transitions
+    # Concatenate image clips with crossfade transitions
     try:
         video = concatenate_videoclips(
             clips,
@@ -345,38 +418,42 @@ def assemble_video(image_paths, voice_over_path, music_path, output_path):
         logging.error(f"Failed to concatenate video clips: {e}")
         return
 
-    # Set the final video duration precisely
+    # Set the final video duration
     video = video.set_duration(total_duration)
 
-    ### FOR THE MUSIC
-
-
+    # Step 2: Music Editing and Looping (from he method)
     def increase_volume_at_start(audio, duration=500):  # 500 ms = 0.5 seconds
         initial = audio[:duration]
         rest = audio[duration:]
         initial = initial + 6  # Increase volume by 6 dB
         return initial + rest
+
     # Add Background Music and loop it to match the video duration
     try:
+        # Load the music file using pydub
+        audio = AudioSegment.from_mp3(music_path)
+
         # Determine if the file name contains "edit"
-        if "edit" in music_path.split("/")[1]:
+        if "edit" in os.path.basename(music_path):
             # Keep only the last x seconds (where x = total_duration)
-            start_time = len(music_path) - (total_duration * 1000)  # convert seconds to milliseconds
-            edited_audio = music_path[start_time:]
-            
+            start_time = len(audio) - (total_duration * 1000)  # convert seconds to milliseconds
+            edited_audio = audio[start_time:]
             # Increase the volume at the start
             edited_audio = increase_volume_at_start(edited_audio, 1500)
         else:
-            # For non-edit files, keep only the first seconds (based on video length)
-            edited_audio = music_path[:total_duration * 1000]
+            # For non-edit files, keep only the first seconds (based on total video duration)
+            edited_audio = audio[:total_duration * 1000]
 
-        # Save the processed audio in the variable 'music_path'
-        music_path = edited_audio
+        # Export the edited audio to a temporary file
+        temp_music_path = "temp_edited_music.mp3"
+        edited_audio.export(temp_music_path, format="mp3")
 
+        # Load the edited music with moviepy
+        music = AudioFileClip(temp_music_path).volumex(0.1)  # Lower volume for background music
 
-        music = AudioFileClip(music_path).volumex(0.1)  # Lower volume for background music
-        # Loop the music to ensure it covers the entire video duration using afx.audio_loop
+        # Loop the music to ensure it covers the entire video duration
         music = music.fx(afx.audio_loop, duration=total_duration)
+
     except Exception as e:
         logging.error(f"Failed to load or loop background music: {e}")
         music = None
@@ -403,9 +480,9 @@ def assemble_video(image_paths, voice_over_path, music_path, output_path):
             codec="libx264",
             audio_codec="aac",
             fps=24,
-            threads=4,  # Adjust based on your CPU
+            threads=4,
             preset='medium',
-            bitrate="5000k",  # Adjust as needed
+            bitrate="5000k",
             temp_audiofile='temp-audio.m4a',
             remove_temp=True
         )
@@ -423,15 +500,12 @@ def assemble_video(image_paths, voice_over_path, music_path, output_path):
         if final_audio:
             del final_audio
         gc.collect()
-
 # Load environment variables from .env file
 dotenv.load_dotenv()
 
 concept = input("Enter the topic you would like to make videos about: ")  # GET USER INPUT
-with tempfile.TemporaryDirectory() as temp_dir:
 
-temp_dir = "temp"
-logging.info(f"Using temporary directory: {temp_dir}")
+
 
 # TODO: Write the prompt, that genrates a more detailed prompt for making the script.
 system_prompt = f"""You are the first step in a pipeline designed to create YouTube Shorts videos on a topic provided by the user. Your specific role is to generate a script that will later be paired with relevant visuals (images and videos). Here’s a breakdown of what you need to do:
@@ -539,10 +613,7 @@ music_files = [
 # Choose a random music file
 selected_file = random.choice(music_files)
 
-# Load the music file (Assuming the music files are in the current directory)
-audio = AudioSegment.from_mp3(f'music/{selected_file}')
-
-music_path= audio
+music_file_path = f'music/{selected_file}'
 
 
 
@@ -581,7 +652,8 @@ music_path = os.path.join(temp_dir, "background_music.wav")
 subtitles_path = os.path.join(temp_dir, "subtitles.json")
 images_paths = [os.path.join(temp_dir, f"image_{i}.png") for i in range(0, 5)]  # Assuming 5 images
 output_video_path = os.path.join(temp_dir, "final_video.mp4")
-assemble_video(images_paths, voice_over_path, music_path, subtitles_path, output_video_path)
+
+assemble_video(images_paths, voice_over_path, music_file_path, subtitles_path, output_video_path)
 logging.info(f"Final video saved at {output_video_path}")
 
 # Move the final video to the current directory
