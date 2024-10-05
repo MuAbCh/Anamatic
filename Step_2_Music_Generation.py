@@ -1,7 +1,7 @@
 import time
 import requests
 import os
-
+from Step_1_Text_Generation import generate_text
 # Replace your Vercel domain
 base_url = 'https://suno-api-eight-eta.vercel.app/'
 
@@ -97,7 +97,7 @@ def generate_music_file(prompt, make_instrumental=False, wait_audio=False, retri
         "make_instrumental": make_instrumental,
         "wait_audio": wait_audio
     })
-    
+    import ipdb; ipdb.set_trace()
     # Combine the IDs of generated audio
     ids = f"{data[0]['id']},{data[1]['id']}"
     
@@ -121,15 +121,36 @@ def generate_music_file(prompt, make_instrumental=False, wait_audio=False, retri
 
 # Example usage: call the generate_music_file function and specify the output directory
 if __name__ == '__main__':
-    prompt_text = """A popular heavy metal song about war, 
-                    sung by a deep-voiced male singer, slowly and melodiously. 
-                    The lyrics depict the sorrow of people after the war."""
+
+    system_prompt = ''' You are going to be outputting a prompt that will be used by Suno AI, an music generating LLM, 
+    to create a tone/beat.
+    This beat will be overlayed on top of a video and will be explaining a concept/ interesting idea to an audience.
+    The music should be 60 seconds long, and be an instrumental type music with very few lyrics.
+    Basically you give me a comma separated description of the song {The song will be given in user prompt} in 200 characters, including spaces for a song prompt for sonu.ai. You can't use the artist name so describe the vocals too. 
+    The song should start strong for the introductoin and then mellow down for the body of the video , and then end strong again for the final ending.
+    The description must be:
+    200 characters including spaces, otherwise it will fail
+    can't use the artist name
+    Describe the vocals too.
+    HAS TO BE A comma separated description
+    Again, HAS TO BE A comma separated description
+
+'''
+    user_prompt = '''Can you give me a description that is 200 characters, including spaces for a song prompt for sonu.ai. You can't use 
+                    the artist name so describe the vocals too. Make the song upbeat at the start, mellow in the middle, and then upbeat again at the end. 
+                    The song must be 60 seconds long'''
     
-    output_directory = "./my_downloaded_audio"  # Specify your desired directory here
+
+
+
+
+    prompt_text = generate_text(prompt_system=system_prompt, prompt_user=user_prompt)
+    
+    output_directory = "music"  # Specify your desired directory here
     
     audio_files = generate_music_file(prompt_text, make_instrumental=True, wait_audio=False, output_dir=output_directory)
 
     if audio_files:
-        print(f"Audio files downloaded: {audio_files[0]}, {audio_files[1]}")
+        print(f"Audio files downloaded: {audio_files[0]}")
     else:
         print("Failed to generate and download audio.")
