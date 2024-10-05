@@ -59,7 +59,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 
 # Step 1 code ###########################################################
 
-def generate_text_helper(prompt_system, prompt_user, max_new_tokens= 1000, self_model="llama-3.1-70b-versatile", self_temperature=0.00):
+def generate_text(prompt_system, prompt_user, max_new_tokens= 1000, self_model="llama-3.1-70b-versatile", self_temperature=0.00):
     load_dotenv(".env")
     Groq_api_key  = os.getenv("GROQ_APIKEY")
     client = Groq(api_key = Groq_api_key,)
@@ -78,18 +78,6 @@ def generate_text_helper(prompt_system, prompt_user, max_new_tokens= 1000, self_
         )
     # returns just the text
     return chat_completion.choices[0].message.content
-
-def generate_text(prompt, max_new_tokens, model_dir="./Llama-3.2-1B_instruct_openvino"):
-    system_prompt = """
-    You are a helpful assistant that generates song prompts for sonu.ai """
-
-    user_prompt = f"""
-    Can you give me a comma separated description of the song Blinding Lights by The Weeknd in 200 characters, 
-    including spaces for a song prompt for sonu.ai? You can't use the artist name so describe the vocals too.
-    """
-    script = generate_text_helper(system_prompt, user_prompt)
-    print(script)
-    return script
 
 
 # Step 2 code ###########################################################

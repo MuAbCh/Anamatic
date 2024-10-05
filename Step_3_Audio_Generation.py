@@ -5,37 +5,40 @@ os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "text2speechAPI.json"
 
 client = texttospeech.TextToSpeechClient()
 
-random_number = random.randint(1, 3)
+def generate_audio(text, person = 1, dir):
+    random_number = person
 
-if (random_number == 1):
-    voice = "en-US-Journey-F"
-elif (random_number == 2):
-    voice = "en-US-Journey-D"
-else:
-    voice = "en-US-Journey-O"
+    if (random_number == 1):
+        voice = "en-US-Journey-F"
+    elif (random_number == 2):
+        voice = "en-US-Journey-O"
+    else:
+        voice = "en-US-Journey-O"
 
-text = "Today is a wonderful day to build something people love!"
+    synthesis_input = texttospeech.SynthesisInput(text=text)
 
-synthesis_input = texttospeech.SynthesisInput(text=text)
+    voice = texttospeech.VoiceSelectionParams(
+        language_code="en-US",
+        name=voice
+    )
 
-voice = texttospeech.VoiceSelectionParams(
-    language_code="en-US",
-    name=voice
-)
+    audio_config = texttospeech.AudioConfig(
+        audio_encoding=texttospeech.AudioEncoding.MP3
+    )
 
-audio_config = texttospeech.AudioConfig(
-    audio_encoding=texttospeech.AudioEncoding.MP3
-)
+    response = client.synthesize_speech(
+        input=synthesis_input,
+        voice=voice,
+        audio_config=audio_config
+    )
 
-response = client.synthesize_speech(
-    input=synthesis_input,
-    voice=voice,
-    audio_config=audio_config
-)
+    fileName = f"{dir}/output_{person}.mp3"
 
-with open("output.mp3", "wb") as out:
-    out.write(response.audio_content)   
-    print("Audio content written to output.mp3")
+    with open(fileName, "wb") as out:
+        out.write(response.audio_content)   
+        print("Audio content written to output.mp3")
+
+    return fileName
 
 
 
