@@ -1,15 +1,19 @@
 # getting the API keys and setting up the inference models not stored locally:
 import os
-print("hello")
 from groq import Groq
 from dotenv import load_dotenv
 import json
+
+import os
+import json
+
+
 from utils.file_related import open_json_file, load_from_file
-# changed this parameters, system_prompt and user_prompt
+
+
 def generate_text(prompt_system, prompt_user, max_new_tokens= 1000, self_model="llama-3.1-70b-versatile", self_temperature=0.00):
     load_dotenv(".env")
     Groq_api_key  = os.getenv("GROQ_APIKEY")
-    hf_token = os.getenv("HF_TOKEN")
     client = Groq(api_key = Groq_api_key,)
     chat_completion = client.chat.completions.create(
             messages=[
