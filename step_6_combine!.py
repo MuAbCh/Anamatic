@@ -47,6 +47,7 @@ from moviepy.editor import (
     CompositeAudioClip,
     TextClip,
     CompositeVideoClip,
+    VideoFileClip,
     afx  # Import audio effects for looping
 )
 from moviepy.audio.AudioClip import AudioClip
@@ -346,7 +347,7 @@ def update_highlight_times(srt_file, lines_to_highlight):
 
 
 
-def assemble_video(image_paths, voice_over_path, music_path, output_path):
+def assemble_video(image_paths, voice_over_path, music_path, output_path, time_stamps):
     """
     Assembles the final video by stitching together images with fade transitions,
     adding audio (voice-over with added silence and looping background music),
@@ -363,7 +364,7 @@ def assemble_video(image_paths, voice_over_path, music_path, output_path):
     - None
     """
     # Define the duration for crossfades between clips (in seconds)
-    crossfade_duration = 1  # Adjust as needed
+    crossfade_duration = 0  # Adjust as needed
 
     # Load Voice-Over Audio first to determine its duration
     try:
@@ -393,15 +394,36 @@ def assemble_video(image_paths, voice_over_path, music_path, output_path):
 
     # Create Image Clips with crossfade transitions
     clips = []
-    for idx, image_path in enumerate(image_paths):
-        try:
-            clip = ImageClip(image_path).set_duration(total_duration / len(image_paths))
-            # Apply crossfadein to all clips except the first
-            if idx != 0:
-                clip = clip.crossfadein(crossfade_duration)
-            clips.append(clip)
-        except Exception as e:
-            logging.error(f"Failed to create ImageClip for {image_path}: {e}")
+    # for idx, image_path in enumerate(image_paths):
+    #     try:
+    #         clip = ImageClip(image_path).set_duration(total_duration / len(image_paths))
+    #         # Apply crossfadein to all clips except the first
+    #         if idx != 0:
+    #             clip = clip.crossfadein(crossfade_duration)
+    #         clips.append(clip)
+    #     except Exception as e:
+    #         logging.error(f"Failed to create ImageClip for {image_path}: {e}")
+    previous_time = 0
+
+    for index, (sentence, end_time) in enumerate(time_stamps):
+        # Determine the duration for each clip (image or video)
+        clip_duration = end_time - previous_time
+
+        if index == 0 or len(time_stamps) - 1 :
+            try:
+                video_clip = VideoFileClip(image_paths[index]).subclip(0, 4).set_duration(clip_duration)
+                clips.append(video_clip)
+            except Exception as e:
+                logging.error(f"Failed to load video clip: {e}")
+        
+        else:
+            try:
+                image_clip = ImageClip(image_paths[index]).set_duration(clip_duration)
+                clips.append(image_clip)
+            except Exception as e:
+                logging.error(f"Failed to create ImageClip for {image_paths[index - 1]}: {e}")
+
+        previous_time = end_time  # Update previous_time for the next iteration
 
     if not clips:
         logging.error("No valid image clips were created.")
