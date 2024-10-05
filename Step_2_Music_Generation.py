@@ -149,7 +149,7 @@ if __name__ == '__main__':
     
     output_directory = "music"  # Specify your desired directory here
     
-    audio_files = generate_music_file(prompt_text, make_instrumental=False, wait_audio=False, output_dir=output_directory)
+    audio_files = generate_music_file(prompt_text, make_instrumental=True, wait_audio=False, output_dir=output_directory)
 
     if audio_files:
         print(f"Audio files downloaded: {audio_files[0]}")

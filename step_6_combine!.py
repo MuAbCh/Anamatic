@@ -287,6 +287,7 @@ Reminder for the Duration, the script must be at most 225 words long
 No Redundancy: Avoid repeating the same information. Every sentence should introduce something new and push the script forward. Only restate ideas if it adds meaningful emphasis.
 """
 
+script = generate_text(prompt_system=system_prompt, prompt_user=user_prompt)
 
 # TODO: Getting the key words of the images and then ask gpt to give us what key words 
 # A sentence match best with a image keyword.
