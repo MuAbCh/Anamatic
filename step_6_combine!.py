@@ -90,6 +90,7 @@ categories = {
 
 # 1: Create a list of images with their associated keywords
 image_data = []
+video_data = []
 
 # Example structure for the images; actual paths can be dynamic.
 def generate_image_metadata():
@@ -103,10 +104,48 @@ def generate_image_metadata():
                 "keywords": img_keywords
             })
 
+def generate_video_metadata():
+    video_index = 0
+    for category, keywords in categories.items():
+        # Randomly assign 2 keywords to each video
+        vid_keywords = random.sample(keywords, 2)
+        video_data.append({
+            "video_path": f"{category.replace(' ', '_')}_video_{1}.mp4",
+            "keywords": vid_keywords
+        })
+
+
 # Generate image metadata
 generate_image_metadata()
+generate_video_metadata()
 
 # 2: Function to find the best match for a set of keywords
+def find_best_video_match(query_keywords):
+    """
+    Given a list of three keywords, find the video that matches the most keywords.
+    
+    Parameters:
+    - query_keywords (list): A list of 3 keywords.
+    
+    Returns:
+    - dict: The video data (path, keywords) of the best matching video.
+    """
+    best_match = None
+    highest_score = 0
+    
+    for image in video_data:
+        # Calculate how many keywords match
+        match_count = len(set(query_keywords).intersection(image['keywords']))
+        
+        if match_count > highest_score:
+            best_match = image
+            highest_score = match_count
+    
+    if best_match:
+        return best_match
+    else:
+        return None
+
 def find_best_match(query_keywords):
     """
     Given a list of three keywords, find the image that matches the most keywords.
@@ -132,10 +171,12 @@ def find_best_match(query_keywords):
         return best_match
     else:
         return None
-    
+
 # Function to get a default image if no best match is found
 def get_default_image():
     return random.choice(image_data)  # Return a random image from the dataset
+def get_default_video():
+    return random.choice(video_data)  # Return a random video from the dataset
 
 # Assuming you already have the function `generate_text()` from your previous code
 # Sample list of keywords (You can modify it with the actual list of 44 keywords)
@@ -527,8 +568,11 @@ selected_images = {}
 
 for index, (sentence, keywords) in enumerate(sentence_keywords_cleaned.items()):
     if index == 0 or index == len(sentence_keywords_cleaned) - 1:
-        # For the first and last sentences, no image is selected
-        selected_images[sentence] = None
+        # For the first and last sentences, video is selected insteade of image
+        best_video = find_best_video_match(keywords)
+        if not best_video:
+            best_video = get_default_video()
+        selected_images[sentence] = best_video['video_path']
     else:
         best_image = find_best_match(keywords)
         
