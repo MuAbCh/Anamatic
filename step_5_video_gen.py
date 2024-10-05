@@ -41,10 +41,10 @@ def fetch_result(request_id):
     response = requests.post(url, headers=headers, data=payload)
     return json.loads(response.text)
 
-def main():
-    prompt = "Visually explain how to reverse a linked list. Start with a diagram showing a simple singly linked list with nodes labeled 1 → 2 → 3 → 4 → 5. Use arrows to indicate the direction of the list. Then, show the process of reversing it by flipping the direction of the arrows, resulting in the final list 5 → 4 → 3 → 2 → 1, ultra HD video"
-    negative_prompt = "Low Quality"
-    seconds = 4
+def gen_video(prompt1, negative_prompt1, seconds1, dir):
+    prompt = prompt1
+    negative_prompt = negative_prompt1
+    seconds = seconds1
 
     # Initial request to generate video
     response_data = generate_video(prompt, negative_prompt, seconds)
@@ -73,7 +73,7 @@ def main():
         video_response = requests.get(video_url)
         
         # Generate a filename
-        filename = "generated_video3.mp4"
+        filename = f"{dir}/generated_video3.mp4"
         
         # Save the video to the current working directory
         with open(filename, 'wb') as f:
@@ -83,5 +83,4 @@ def main():
     else:
         print("Error initiating video generation:", response_data.get('message', 'Unknown error'))
 
-if __name__ == "__main__":
-    main()
+    return filename
