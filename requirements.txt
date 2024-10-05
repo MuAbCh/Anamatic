@@ -23,3 +23,6 @@ pydub
 # Optional: for development
 black
 flake8
+
+whisper
+whisperx
