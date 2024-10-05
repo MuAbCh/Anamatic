@@ -1,2 +1,3 @@
 text2speechAPI.json
-.env
+/.env
+venv
