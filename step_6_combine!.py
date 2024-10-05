@@ -24,19 +24,19 @@ import random
 
 import requests
 
-import openvino_genai as ov_genai
+# import openvino_genai as ov_genai
 from transformers import pipeline
 import scipy
 import torch
 import soundfile as sf
 from tqdm.auto import tqdm
 import dotenv
-import openai  # Ensure you have the 'openai' library installed
+# import openai  # Ensure you have the 'openai' library installed
 from pathlib import Path
-from optimum.intel.openvino import OVStableDiffusionXLPipeline
+# from optimum.intel.openvino import OVStableDiffusionXLPipeline
 from PIL import Image
 import matplotlib.pyplot as plt
-from openai import OpenAI
+# from openai import OpenAI
 import numpy as np
 
 
@@ -64,7 +64,7 @@ from pydub.effects import normalize
 from Step_1_Text_Generation import generate_text
 from Step_2_Music_Generation import generate_music_file
 from Step_3_Audio_Generation import generate_audio
-from Step_4_Transcript_Generation import transcribe_audio
+from Step_4_Transcript_Generation import transcribe_audio, make_file_path
 from step_5_img_gen import get_b_rolls
 from step_5_video_gen import gen_video
 
@@ -239,111 +239,6 @@ def process_script_cleaned(script, keyword_list):
 
 import re
 import logging
-
-def update_highlight_times(srt_file, lines_to_highlight):
-    """
-    Sets the beginning times for the highlights in the SRT file based on the provided array of lines.
-
-    Parameters:
-    srt_file (str): The path to the SRT file.
-    lines_to_highlight (list): A list of strings (lines) to highlight.
-
-    Returns:
-    list: A list of tuples where each tuple contains (highlighted line, start time in seconds).
-    """
-    
-    # Read the SRT file and parse its contents
-    with open(srt_file, 'r', encoding='utf-8') as file:
-        srt_lines = file.readlines()
-
-    # Regex pattern to extract time and text from SRT file
-    time_pattern = re.compile(r'(\d{2}:\d{2}:\d{2},\d{3}) --> (\d{2}:\d{2}:\d{2},\d{3})')
-    srt_entries = []
-
-    current_time = None
-    current_text = ""
-
-    for line in srt_lines:
-        line = line.strip()  # Strip leading and trailing whitespace
-
-        if time_pattern.match(line):  # This line contains the time range
-            # When a new time block starts, save the previous block if it exists
-            if current_time and current_text:
-                # Store as a tuple of (start time, text)
-                srt_entries.append((current_time, current_text.strip()))
-                current_text = ""  # Reset text for the next block
-
-            # Capture the start time
-            current_time = time_pattern.match(line).group(1)
-        elif line and not line.isdigit():  # Only add text lines, not empty or index lines
-            current_text += " " + line
-        elif not line and current_time and current_text:
-            # When we hit a blank line after text, we save the current block
-            srt_entries.append((current_time, current_text.strip()))
-            current_text = ""
-            current_time = None
-
-    # Check for the last entry
-    if current_time and current_text:
-        srt_entries.append((current_time, current_text.strip()))
-
-    # Helper function to convert SRT time format to seconds
-    def srt_time_to_seconds(srt_time):
-        hours, minutes, seconds_millis = srt_time.split(':')
-        seconds, millis = seconds_millis.split(',')
-        return int(hours) * 3600 + int(minutes) * 60 + int(seconds) + int(millis) / 1000
-
-    # Sliding window match function with special handling for <u> tags
-    def sliding_window_match(srt_text, key_words):
-        """
-        Perform a sliding window match for consecutive words in the srt_text.
-        Tries to match pairs of words and progressively widen the match window if no match is found.
-        """
-        srt_words = srt_text.split()
-        key_length = len(key_words)
-
-        # Start with pairs of words and widen the window progressively
-        for window_size in range(2, key_length + 1):  # Start with 2-word windows
-            for i in range(key_length - window_size + 1):
-                key_window = " ".join(key_words[i:i + window_size])  # Get sliding window of key words
-
-                for j in range(len(srt_words) - window_size + 1):
-                    srt_window = " ".join(srt_words[j:j + window_size])  # Get sliding window of srt words
-
-                    # Check for regular match or matches with <u> tags
-                    if (
-                        key_window in srt_window or  # Regular match
-                        any(
-                            f"<u>{word}</u>" in srt_window for word in key_words[i:i + window_size]
-                        )
-                    ):
-                        return True
-        return False
-
-    # Initialize a result list to store matched lines and their start times
-    result = []
-
-    # Iterate over each line in the array
-    for line in lines_to_highlight:
-        words = line.split()  # Split the line into words
-        found = False  # Flag to indicate if a match was found
-
-        # Try different word windows in SRT entries
-        for entry in srt_entries:
-            srt_time, srt_text = entry  # Unpack the tuple
-
-            # Perform a sliding window match with the SRT text
-            if sliding_window_match(srt_text, words):
-                highlight_time = srt_time_to_seconds(srt_time)
-                result.append((line, highlight_time))  # Store the result as (line, start time)
-                found = True  # Set flag to indicate a match was found
-                break
-
-        if not found:
-            logging.warning(f"Could not find a match for: {line}")
-            result.append((line, None))  # Append None for lines that weren't matched
-
-    return result
 
 
 
@@ -523,10 +418,125 @@ def assemble_video(image_paths, voice_over_path, music_path, output_path, time_s
             del final_audio
         gc.collect()
 # Load environment variables from .env file
+
+
+def update_highlight_times(srt_file, lines_to_highlight):
+    """
+    Sets the beginning times for the highlights in the SRT file based on the provided array of lines.
+
+    Parameters:
+    srt_file (str): The path to the SRT file.
+    lines_to_highlight (list): A list of strings (lines) to highlight.
+
+    Returns:
+    list: A list of tuples where each tuple contains (highlighted line, start time in seconds).
+    """
+    
+    # Read the SRT file and parse its contents
+    with open(srt_file, 'r', encoding='utf-8') as file:
+        srt_lines = file.readlines()
+
+    # Regex pattern to extract time and text from SRT file
+    time_pattern = re.compile(r'(\d{2}:\d{2}:\d{2},\d{3}) --> (\d{2}:\d{2}:\d{2},\d{3})')
+    srt_entries = []
+
+    current_time = None
+    current_text = ""
+
+    for line in srt_lines:
+        line = line.strip()  # Strip leading and trailing whitespace
+
+        if time_pattern.match(line):  # This line contains the time range
+            # When a new time block starts, save the previous block if it exists
+            if current_time and current_text:
+                # Store as a tuple of (start time, text)
+                srt_entries.append((current_time, current_text.strip()))
+                current_text = ""  # Reset text for the next block
+
+            # Capture the start time
+            current_time = time_pattern.match(line).group(1)
+        elif line and not line.isdigit():  # Only add text lines, not empty or index lines
+            current_text += " " + line
+        elif not line and current_time and current_text:
+            # When we hit a blank line after text, we save the current block
+            srt_entries.append((current_time, current_text.strip()))
+            current_text = ""
+            current_time = None
+
+    # Check for the last entry
+    if current_time and current_text:
+        srt_entries.append((current_time, current_text.strip()))
+
+    # Helper function to convert SRT time format to seconds
+    def srt_time_to_seconds(srt_time):
+        hours, minutes, seconds_millis = srt_time.split(':')
+        seconds, millis = seconds_millis.split(',')
+        return int(hours) * 3600 + int(minutes) * 60 + int(seconds) + int(millis) / 1000
+
+    # Sliding window match function with special handling for <u> tags
+    def sliding_window_match(srt_text, key_words):
+        """
+        Perform a sliding window match for consecutive words in the srt_text.
+        Tries to match pairs of words and progressively widen the match window if no match is found.
+        """
+        srt_words = srt_text.split()
+        key_length = len(key_words)
+
+        # Start with pairs of words and widen the window progressively
+        for window_size in range(2, key_length + 1):  # Start with 2-word windows
+            for i in range(key_length - window_size + 1):
+                key_window = " ".join(key_words[i:i + window_size])  # Get sliding window of key words
+
+                for j in range(len(srt_words) - window_size + 1):
+                    srt_window = " ".join(srt_words[j:j + window_size])  # Get sliding window of srt words
+
+                    # Check for regular match or matches with <u> tags
+                    if (
+                        key_window in srt_window or  # Regular match
+                        any(
+                            f"<u>{word}</u>" in srt_window for word in key_words[i:i + window_size]
+                        )
+                    ):
+                        return True
+        return False
+
+    # Initialize a result list to store matched lines and their start times
+    result = []
+
+    # Iterate over each line in the array
+    for line in lines_to_highlight:
+        words = line.split()  # Split the line into words
+        found = False  # Flag to indicate if a match was found
+
+        # Try different word windows in SRT entries
+        for entry in srt_entries:
+            srt_time, srt_text = entry  # Unpack the tuple
+
+            # Perform a sliding window match with the SRT text
+            if sliding_window_match(srt_text, words):
+                highlight_time = srt_time_to_seconds(srt_time)
+                result.append((line, highlight_time))  # Store the result as (line, start time)
+                found = True  # Set flag to indicate a match was found
+                break
+
+        if not found:
+            logging.warning(f"Could not find a match for: {line}")
+            result.append((line, None))  # Append None for lines that weren't matched
+
+    return result
+
+
 dotenv.load_dotenv()
 
 concept = input("Enter the topic you would like to make videos about: ")  # GET USER INPUT
+# Sanitize the concept name to avoid issues with spaces
+concept = concept.replace(" ", "_").lower()
 
+# Create the full directory path
+concept_dir = os.path.join(".", concept)
+
+# Create the directory if it doesn't exist
+os.makedirs(concept_dir, exist_ok=True)
 
 
 # TODO: Write the prompt, that genrates a more detailed prompt for making the script.
@@ -571,6 +581,11 @@ Also remove the seconds of how long the sentence is, we will calculate that on o
 
 script = generate_text(prompt_system=system_prompt, prompt_user=user_prompt)
 
+
+voice_over_path = generate_audio(text = script, person=1, dir = concept)
+
+
+#########################################################################################
 # Process the script and get the assigned keywords
 sentence_keywords_cleaned = process_script_cleaned(script, keyword_list)
 
@@ -592,29 +607,9 @@ for index, (sentence, keywords) in enumerate(sentence_keywords_cleaned.items()):
         
         selected_images[sentence] = best_image['image_path']
 
-
-
-
-
-# TODO: Getting the key words of the images and then ask gpt to give us what key words 
-# A sentence match best with a image keyword. -- Done
-# TODO: make a dictoinary of each image path, and its key words, that way we can match which key words 
-# Step 5: Generate Image Descriptions -- Done
-#  Match best wit hthe image, and get the image path stored in a list -- Done
-# TODO: This list we can then put in to assemble function -- list called selected_images[], where index the is the sentence number
+ 
 #############################################################################
-# Step 1: Generate Text Script
-prompt = """\n\n
 
-"""
-user_input = prompt.format(input_sentence="Spaceships are the future of human travel.")
-script_text = generate_text(user_input, 1000)
-script_path = os.path.join(temp_dir, "script.txt")
-with open(script_path, 'w') as f:
-    f.write(script_text)
-logging.info("Generated text script.")
-
-###########################################################################
 
 # Step 2: Generate Music Description
 # have a textual description of the music we want. 
@@ -643,11 +638,23 @@ music_file_path = f'music/{selected_file}'
 # logging.info(f"Background music saved at {music_path}")
 
 # Step 3: Generate Voice-Over Audio
-voice_over_path = generate_audio(script_text, os.path.join(temp_dir, "voice_over.wav"))
+voice_over_path = generate_audio(text = script, person=1, dir = concept)
 logging.info(f"Voice-over audio saved at {voice_over_path}")
 
 # Step 4: Transcribe Audio to Generate Subtitles
-transcription_path = transcribe_audio(voice_over_path, temp_dir)
+# Example: voice_over_path might be something like 'new_concept/new_audio.wav'
+# Join the path with the current directory for consistent path handling
+voice_over_path = os.path.join(os.getcwd(), voice_over_path)
+
+# Get just the file name (without the path) for printing purposes
+audio_file = os.path.basename(voice_over_path)
+print(f"Generated the Audio file: {audio_file}")
+
+# Generate the subtitle file path
+subtitle_file = make_file_path(concept, 'srt')  # Ensuring it's the full path
+
+# Ensure you pass the full path when calling transcribe_audio
+transcription_path = transcribe_audio(audio_file=voice_over_path, subtitle_file=subtitle_file, concept=concept)
 logging.info(f"Transcription saved at {transcription_path}")
 
 
@@ -671,11 +678,11 @@ change_settings({"IMAGEMAGICK_BINARY": "/usr/bin/convert"})
 temp_dir = "temp"
 voice_over_path = os.path.join(temp_dir, "voice_over.wav")
 music_path = os.path.join(temp_dir, "background_music.wav")
-subtitles_path = os.path.join(temp_dir, "subtitles.json")
+# subtitles_path = os.path.join(temp_dir, "subtitles.json")
 images_paths = [os.path.join(temp_dir, f"image_{i}.png") for i in range(0, 5)]  # Assuming 5 images
 output_video_path = os.path.join(temp_dir, "final_video.mp4")
 
-assemble_video(images_paths, voice_over_path, music_file_path, subtitles_path, output_video_path)
+assemble_video(images_paths, voice_over_path, music_file_path, output_video_path)
 logging.info(f"Final video saved at {output_video_path}")
 
 # Move the final video to the current directory

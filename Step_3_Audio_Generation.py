@@ -5,7 +5,7 @@ os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "text2speechAPI.json"
 
 client = texttospeech.TextToSpeechClient()
 
-def generate_audio(text, person = 1, dir):
+def generate_audio(text, dir, person = 1,):
     random_number = person
 
     if (random_number == 1):
@@ -32,13 +32,22 @@ def generate_audio(text, person = 1, dir):
         audio_config=audio_config
     )
 
-    fileName = f"{dir}/output_{person}.mp3"
+    # Ensure the dir exists
+    os.makedirs(dir, exist_ok=True)  # Ensure the directory is created before using it
 
-    with open(fileName, "wb") as out:
-        out.write(response.audio_content)   
-        print("Audio content written to output.mp3")
+    # Generate the file name based on the directory and person identifier
+    fileName = os.path.join(dir, f"{dir}_{person}.wav")  # Combine directory and file name
 
+    # Check if the file exists, and if not, write the audio content
+    if not os.path.exists(fileName):
+        # Assuming `response.audio_content` contains the actual audio data in bytes
+        with open(fileName, "wb") as out:
+            out.write(response.audio_content)  # Write audio content to the file in binary mode
+            print(f"Audio content written to {fileName}")
+    
+    # Return the path to the generated audio file
     return fileName
+
 
 
 
