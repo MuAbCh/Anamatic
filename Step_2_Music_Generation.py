@@ -139,7 +139,7 @@ if __name__ == '__main__':
 '''
     user_prompt = '''Give me a description of a hip hop rap song beat, You can't use 
                     the artist name so describe the vocals too. Describe the song to generate hype, describe the vocals to be soft.
-                    Describe how Snoopy dog does with, with a special brand of Snoopy Doggy Dawg.'''
+                    prompt it to be energetic at the start (have some drums and high hats) and then slowly, very slowly mellow down to guitar and soft flute'''
     
 
 

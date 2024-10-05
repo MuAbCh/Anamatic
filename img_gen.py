@@ -82,18 +82,18 @@ def get_b_rolls(concept, num_b_rolls, hf_token):
                 }
 
                 # Generate the image asset
-                print(f"Generating image with prompt: {prompt['inputs']}...")
-                content = generate_assets(hf_token=hf_token, payload=prompt)
+                # print(f"Generating image with prompt: {prompt['inputs']}...")
+                # content = generate_assets(hf_token=hf_token, payload=prompt)
 
                 # Convert to image and save
-                image = Image.open(io.BytesIO(content))
-                image_path = os.path.join(category_dir, f"{category.replace(' ', '_')}_image_{num_images + 1}.png")
-                image.save(image_path)
+                # image = Image.open(io.BytesIO(content))
+                # image_path = os.path.join(category_dir, f"{category.replace(' ', '_')}_image_{num_images + 1}.png")
+                # image.save(image_path)
                 
-                # Append to list
-                b_rolls.append(image_path)
-                num_images += 1
-                print(f"Image {num_images} for {category} successfully saved at {image_path}")
+                # # Append to list
+                # b_rolls.append(image_path)
+                # num_images += 1
+                # print(f"Image {num_images} for {category} successfully saved at {image_path}")
 
             except Exception as e:
                 print(f"Something went wrong with generating images for {category} :(")
