@@ -1,0 +1,87 @@
+import requests
+import json
+from dotenv import load_dotenv
+import os
+import time
+
+load_dotenv(".env")
+
+STABLE_DIFFUSION_API_KEY = os.getenv("STABLE_DIFFUSION_API_KEY")
+
+def generate_video(prompt, negative_prompt, seconds):
+    url = "https://stablediffusionapi.com/api/v5/text2video"
+
+    payload = json.dumps({
+        "key": STABLE_DIFFUSION_API_KEY,
+        "prompt": prompt,
+        "negative_prompt": negative_prompt,
+        "scheduler": "UniPCMultistepScheduler",
+        "seconds": seconds
+    })
+
+    headers = {
+        'Content-Type': 'application/json'
+    }
+
+    response = requests.post(url, headers=headers, data=payload)
+    return json.loads(response.text)
+
+def fetch_result(request_id):
+    url = "https://stablediffusionapi.com/api/v4/dreambooth/fetch"
+
+    payload = json.dumps({
+        "key": STABLE_DIFFUSION_API_KEY,
+        "request_id": request_id
+    })
+
+    headers = {
+        'Content-Type': 'application/json'
+    }
+
+    response = requests.post(url, headers=headers, data=payload)
+    return json.loads(response.text)
+
+def main():
+    prompt = "Visually explain how to reverse a linked list. Start with a diagram showing a simple singly linked list with nodes labeled 1 → 2 → 3 → 4 → 5. Use arrows to indicate the direction of the list. Then, show the process of reversing it by flipping the direction of the arrows, resulting in the final list 5 → 4 → 3 → 2 → 1, ultra HD video"
+    negative_prompt = "Low Quality"
+    seconds = 4
+
+    # Initial request to generate video
+    response_data = generate_video(prompt, negative_prompt, seconds)
+
+    # Check if the request was accepted for processing
+    if response_data['status'] == 'processing':
+        print("Video generation started. Waiting for completion...")
+        request_id = response_data['id']
+        
+        # Poll for results
+        while True:
+            time.sleep(10)  # Wait for 10 seconds before each check
+            result = fetch_result(request_id)
+            
+            if result['status'] == 'success':
+                video_url = result['output'][0]  # Assuming the first output is the video URL
+                break
+            elif result['status'] == 'failed':
+                print("Video generation failed:", result.get('message', 'Unknown error'))
+                return
+            else:
+                print("Still processing... ETA:", result.get('eta', 'Unknown'))
+
+        # Download the video
+        print("Downloading video...")
+        video_response = requests.get(video_url)
+        
+        # Generate a filename
+        filename = "generated_video3.mp4"
+        
+        # Save the video to the current working directory
+        with open(filename, 'wb') as f:
+            f.write(video_response.content)
+        
+        print(f"Video saved as {filename} in the current working directory.")
+    else:
+        print("Error initiating video generation:", response_data.get('message', 'Unknown error'))
+
+if __name__ == "__main__":
+    main()
