@@ -66,31 +66,8 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 
 # Step 1 code ###########################################################
 
-<<<<<<< HEAD
 
 
-=======
-def generate_text(prompt_system, prompt_user, max_new_tokens= 1000, self_model="llama-3.1-70b-versatile", self_temperature=0.00):
-    load_dotenv(".env")
-    Groq_api_key  = os.getenv("GROQ_APIKEY")
-    client = Groq(api_key = Groq_api_key,)
-    chat_completion = client.chat.completions.create(
-            messages=[
-                {
-                    "role": "system",
-                    "content":prompt_system
-                },
-                {
-                    "role": "user",
-                    "content": prompt_user,
-                }
-            ],
-            model=self_model, temperature=self_temperature,
-        )
-    # returns just the text
-    return chat_completion.choices[0].message.content
-
->>>>>>> 90c9a8a904a40074b904dfcb6da0da3639fbffb8
 
 # Step 2 code ###########################################################
 
