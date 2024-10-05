@@ -101,7 +101,7 @@ def generate_image_metadata():
             # Randomly assign 2 keywords to each image
             img_keywords = random.sample(keywords, 2)
             image_data.append({
-                "image_path": f"{category.replace(' ', '_')}_image_{i + 1}.png",
+                "image_path": f"{category}/{category.replace(' ', '_')}_image_{i + 1}.png",
                 "keywords": img_keywords
             })
 
@@ -111,7 +111,7 @@ def generate_video_metadata():
         # Randomly assign 2 keywords to each video
         vid_keywords = random.sample(keywords, 2)
         video_data.append({
-            "video_path": f"{category.replace(' ', '_')}_video_{1}.mp4",
+            "video_path": f"{category}/{category.replace(' ', '_')}_video_{1}.mp4",
             "keywords": vid_keywords
         })
 
@@ -306,7 +306,7 @@ def assemble_video(image_paths, voice_over_path, music_path, output_path):
 
         if index == 0 or len(image_paths) - 1 :
             try:
-                video_clip = VideoFileClip(image_path).set_duration(clip_duration)
+                video_clip = VideoFileClip(os.path.join(concept_dir, image_path)).set_duration(clip_duration)
                 clips.append(video_clip)
             except Exception as e:
                 logging.error(f"Failed to load video clip: {e}")
@@ -318,7 +318,6 @@ def assemble_video(image_paths, voice_over_path, music_path, output_path):
             except Exception as e:
                 logging.error(f"Failed to create ImageClip for {image_path}: {e}")
 
-        previous_time = end_time  # Update previous_time for the next iteration
 
     if not clips:
         logging.error("No valid image clips were created.")
