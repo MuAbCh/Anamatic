@@ -1,0 +1,25 @@
+# Text Generation
+openai
+python-dotenv
+
+# Music Generation
+mubert
+
+# Audio Generation
+gtts
+
+# Image Generation
+stability_sdk
+
+# Transcript Generation
+whisper
+
+# General utilities
+requests
+pillow
+moviepy
+pydub
+
+# Optional: for development
+black
+flake8
