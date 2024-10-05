@@ -653,11 +653,11 @@ change_settings({"IMAGEMAGICK_BINARY": "/usr/bin/convert"})
 temp_dir = "temp"
 voice_over_path = os.path.join(temp_dir, "voice_over.wav")
 music_path = os.path.join(temp_dir, "background_music.wav")
-subtitles_path = os.path.join(temp_dir, "subtitles.json")
+# subtitles_path = os.path.join(temp_dir, "subtitles.json")
 images_paths = [os.path.join(temp_dir, f"image_{i}.png") for i in range(0, 5)]  # Assuming 5 images
 output_video_path = os.path.join(temp_dir, "final_video.mp4")
 
-assemble_video(images_paths, voice_over_path, music_file_path, subtitles_path, output_video_path)
+assemble_video(images_paths, voice_over_path, music_file_path, output_video_path)
 logging.info(f"Final video saved at {output_video_path}")
 
 # Move the final video to the current directory
