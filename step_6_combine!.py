@@ -420,7 +420,7 @@ def assemble_video(image_paths, voice_over_path, music_path, output_path, time_s
 # Load environment variables from .env file
 
 
-def update_highlight_times(srt_file, lines_to_highlight):
+def update_highlight_times(srt_file, lines_to_highlight,):
     """
     Sets the beginning times for the highlights in the SRT file based on the provided array of lines.
 
@@ -431,10 +431,19 @@ def update_highlight_times(srt_file, lines_to_highlight):
     Returns:
     list: A list of tuples where each tuple contains (highlighted line, start time in seconds).
     """
-    
-    # Read the SRT file and parse its contents
-    with open(srt_file, 'r', encoding='utf-8') as file:
-        srt_lines = file.readlines()
+        # Check if srt_file is a string (path) or file-like object
+    if isinstance(srt_file, str):
+        # It's a path, so open the file
+        with open(srt_file, 'r', encoding='utf-8') as file:
+            srt_lines = file.readlines()
+    else:
+        # Assume it's already a file-like object
+        srt_lines = srt_file.readlines()
+
+
+    # # Read the SRT file and parse its contents
+    # with open(srt_file, 'r', encoding='utf-8') as file:
+    #     srt_lines = file.readlines()
 
     # Regex pattern to extract time and text from SRT file
     time_pattern = re.compile(r'(\d{2}:\d{2}:\d{2},\d{3}) --> (\d{2}:\d{2}:\d{2},\d{3})')
@@ -589,6 +598,7 @@ voice_over_path = generate_audio(text = script, person=1, dir = concept)
 # Process the script and get the assigned keywords
 sentence_keywords_cleaned = process_script_cleaned(script, keyword_list)
 
+sentences_array = split_script_into_sentences(script)
 selected_images = {}
 
 for index, (sentence, keywords) in enumerate(sentence_keywords_cleaned.items()):
@@ -652,17 +662,19 @@ print(f"Generated the Audio file: {audio_file}")
 
 # Generate the subtitle file path
 subtitle_file = make_file_path(concept, 'srt')  # Ensuring it's the full path
-
+print()
+print()
+time_stamps = update_highlight_times(srt_file=subtitle_file, lines_to_highlight= sentences_array)
+print(f" These are the time stamps: {time_stamps}" )
+print()
+print()
+print()
 # Ensure you pass the full path when calling transcribe_audio
 transcription_path = transcribe_audio(audio_file=voice_over_path, subtitle_file=subtitle_file, concept=concept)
 logging.info(f"Transcription saved at {transcription_path}")
 
 
 # Step 7: Generate Images # TODO: Each time an (video+image) set is generated, we add a desctription with the key words
-model_dir = os.path.join(temp_dir, "openvino-sd-xl-base-1.0")
-base_pipeline = setup_sdxl_base_model(model_dir=model_dir, device="CPU")
-images_paths = generate_images(images_json_path, base_pipeline, temp_dir)
-logging.info(f"Generated images: {images_paths}")
 
 # # Step 8: Generate Subtitles File
 # subtitles_path = generate_subtitles(transcription_path, temp_dir)
@@ -675,19 +687,14 @@ from moviepy.config import change_settings
 change_settings({"IMAGEMAGICK_BINARY": "/usr/bin/convert"})
 
 # Step 9: Assemble the Video
-temp_dir = "temp"
-voice_over_path = os.path.join(temp_dir, "voice_over.wav")
-music_path = os.path.join(temp_dir, "background_music.wav")
 # subtitles_path = os.path.join(temp_dir, "subtitles.json")
-images_paths = [os.path.join(temp_dir, f"image_{i}.png") for i in range(0, 5)]  # Assuming 5 images
-output_video_path = os.path.join(temp_dir, "final_video.mp4")
 
-assemble_video(images_paths, voice_over_path, music_file_path, output_video_path)
-logging.info(f"Final video saved at {output_video_path}")
+assemble_video(selected_images, voice_over_path, music_file_path, concept, time_stamps = time_stamps )
+logging.info(f"Final video saved at {concept}")
 
 # Move the final video to the current directory
 final_output = os.path.join(os.getcwd(), "final_video.mp4")
-shutil.move(output_video_path, final_output)
+shutil.move(concept, final_output)
 logging.info(f"Video moved to {final_output}")
 
 logging.info("All done!")
