@@ -195,6 +195,114 @@ def process_script_cleaned(script, keyword_list):
 
     
 
+import re
+import logging
+
+def update_highlight_times(srt_file, lines_to_highlight):
+    """
+    Sets the beginning times for the highlights in the SRT file based on the provided array of lines.
+
+    Parameters:
+    srt_file (str): The path to the SRT file.
+    lines_to_highlight (list): A list of strings (lines) to highlight.
+
+    Returns:
+    list: A list of tuples where each tuple contains (highlighted line, start time in seconds).
+    """
+    
+    # Read the SRT file and parse its contents
+    with open(srt_file, 'r', encoding='utf-8') as file:
+        srt_lines = file.readlines()
+
+    # Regex pattern to extract time and text from SRT file
+    time_pattern = re.compile(r'(\d{2}:\d{2}:\d{2},\d{3}) --> (\d{2}:\d{2}:\d{2},\d{3})')
+    srt_entries = []
+
+    current_time = None
+    current_text = ""
+
+    for line in srt_lines:
+        line = line.strip()  # Strip leading and trailing whitespace
+
+        if time_pattern.match(line):  # This line contains the time range
+            # When a new time block starts, save the previous block if it exists
+            if current_time and current_text:
+                # Store as a tuple of (start time, text)
+                srt_entries.append((current_time, current_text.strip()))
+                current_text = ""  # Reset text for the next block
+
+            # Capture the start time
+            current_time = time_pattern.match(line).group(1)
+        elif line and not line.isdigit():  # Only add text lines, not empty or index lines
+            current_text += " " + line
+        elif not line and current_time and current_text:
+            # When we hit a blank line after text, we save the current block
+            srt_entries.append((current_time, current_text.strip()))
+            current_text = ""
+            current_time = None
+
+    # Check for the last entry
+    if current_time and current_text:
+        srt_entries.append((current_time, current_text.strip()))
+
+    # Helper function to convert SRT time format to seconds
+    def srt_time_to_seconds(srt_time):
+        hours, minutes, seconds_millis = srt_time.split(':')
+        seconds, millis = seconds_millis.split(',')
+        return int(hours) * 3600 + int(minutes) * 60 + int(seconds) + int(millis) / 1000
+
+    # Sliding window match function with special handling for <u> tags
+    def sliding_window_match(srt_text, key_words):
+        """
+        Perform a sliding window match for consecutive words in the srt_text.
+        Tries to match pairs of words and progressively widen the match window if no match is found.
+        """
+        srt_words = srt_text.split()
+        key_length = len(key_words)
+
+        # Start with pairs of words and widen the window progressively
+        for window_size in range(2, key_length + 1):  # Start with 2-word windows
+            for i in range(key_length - window_size + 1):
+                key_window = " ".join(key_words[i:i + window_size])  # Get sliding window of key words
+
+                for j in range(len(srt_words) - window_size + 1):
+                    srt_window = " ".join(srt_words[j:j + window_size])  # Get sliding window of srt words
+
+                    # Check for regular match or matches with <u> tags
+                    if (
+                        key_window in srt_window or  # Regular match
+                        any(
+                            f"<u>{word}</u>" in srt_window for word in key_words[i:i + window_size]
+                        )
+                    ):
+                        return True
+        return False
+
+    # Initialize a result list to store matched lines and their start times
+    result = []
+
+    # Iterate over each line in the array
+    for line in lines_to_highlight:
+        words = line.split()  # Split the line into words
+        found = False  # Flag to indicate if a match was found
+
+        # Try different word windows in SRT entries
+        for entry in srt_entries:
+            srt_time, srt_text = entry  # Unpack the tuple
+
+            # Perform a sliding window match with the SRT text
+            if sliding_window_match(srt_text, words):
+                highlight_time = srt_time_to_seconds(srt_time)
+                result.append((line, highlight_time))  # Store the result as (line, start time)
+                found = True  # Set flag to indicate a match was found
+                break
+
+        if not found:
+            logging.warning(f"Could not find a match for: {line}")
+            result.append((line, None))  # Append None for lines that weren't matched
+
+    return result
+
 
 
 def assemble_video(image_paths, voice_over_path, music_path, output_path):
