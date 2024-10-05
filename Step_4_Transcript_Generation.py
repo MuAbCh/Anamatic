@@ -86,18 +86,18 @@ def make_file_path(concept, extension):
     return file_path
 
 
-def transcribe_audio(audio_file_new, subtitle_file, style='Default'):
+def transcribe_audio(audio_file, subtitle_file,concept, style='Default'):
 
     batch_size = 16
     device = "cuda"
-    whisper_model = whisperx.load_model("large-v2", device)
+    whisper_model = whisperx.load_model("medium", device)
     compute_type = "float16" # change to "int8" if low on GPU mem (may reduce accuracy)
 
 
 
-
-    if os.path.exists(audio_file_new):
-        audio = whisperx.load_audio(audio_file_new)
+    import ipdb; ipdb.set_trace()
+    if os.path.exists(audio_file):
+        audio = whisperx.load_audio(audio_file)
         result = whisper_model.transcribe(audio, batch_size=batch_size)
         language_code=result["language"]
 
@@ -109,7 +109,7 @@ def transcribe_audio(audio_file_new, subtitle_file, style='Default'):
         vtt_writer = get_writer("srt", f'{concept}/')
         vtt_writer(
             result,
-            subtitle_file, #changed this from audio_file_new
+            subtitle_file, #changed this from audio_file
             {"max_line_width": 15, "max_line_count": 1, "highlight_words": True},
         )
 
@@ -131,6 +131,7 @@ def transcribe_audio(audio_file_new, subtitle_file, style='Default'):
         # Usage
         # ass_name = os.path.join(concept.replace(" ","_"),f"{concept.replace(" ","_")}.ass")
         # we define the styles here:
+        print(f"This is where the subtitle is file now: {subtitle_file} ")
         new_styles = {
     "Default": {
         1: "Arial",             # Fontname
@@ -145,13 +146,15 @@ def transcribe_audio(audio_file_new, subtitle_file, style='Default'):
 }
         update_ass_styles(subtitle_file, subtitle_file, new_styles)
         remove_overlapping_subtitles(subtitle_file)
+        return subtitle_file
 
-# THIS IS HOW YOU CALL THE FUNCTION
-if __name__ == '__main__':
-    concept = "not test" # FROM THE USER
-    concept = concept.replace(" ","_")
-    # audio_file = make_file_path(concept, 'wav')
-    audio_file = 'new_srt.wav'
-    subtitle_file = make_file_path(concept, 'srt')       # Path to the ASS subtitle file
-    # output_file = make_file_path(concept, 'mp4')         # Path to the output video file
-    transcribe_audio(audio_file_new=audio_file, subtitle_file=subtitle_file)
+# # THIS IS HOW YOU CALL THE FUNCTION
+# if __name__ == '__main__':
+#     # concept = "not test" # FROM THE USER
+#     concept = "new_concept"
+#     concept = concept.replace(" ","_")
+#     # audio_file = make_file_path(concept, 'wav')
+#     audio_file = 'new_srt.wav'
+#     subtitle_file = make_file_path(concept, 'srt')       # Path to the ASS subtitle file
+#     # output_file = make_file_path(concept, 'mp4')         # Path to the output video file
+#     transcribe_audio(audio_file=audio_file, subtitle_file=subtitle_file, concept=concept)

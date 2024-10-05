@@ -63,7 +63,7 @@ from pydub.effects import normalize
 from Step_1_Text_Generation import generate_text
 from Step_2_Music_Generation import generate_music_file
 from Step_3_Audio_Generation import generate_audio
-from Step_4_Transcript_Generation import transcribe_audio
+from Step_4_Transcript_Generation import transcribe_audio, make_file_path
 from step_5_img_gen import get_b_rolls
 from step_5_video_gen import gen_video
 
@@ -463,7 +463,14 @@ def assemble_video(image_paths, voice_over_path, music_path, output_path):
 dotenv.load_dotenv()
 
 concept = input("Enter the topic you would like to make videos about: ")  # GET USER INPUT
+# Sanitize the concept name to avoid issues with spaces
+concept = concept.replace(" ", "_").lower()
 
+# Create the full directory path
+concept_dir = os.path.join(".", concept)
+
+# Create the directory if it doesn't exist
+os.makedirs(concept_dir, exist_ok=True)
 
 
 # TODO: Write the prompt, that genrates a more detailed prompt for making the script.
@@ -508,6 +515,11 @@ Also remove the seconds of how long the sentence is, we will calculate that on o
 
 script = generate_text(prompt_system=system_prompt, prompt_user=user_prompt)
 
+
+voice_over_path = generate_audio(text = script, person=1, dir = concept)
+
+
+#########################################################################################
 # Process the script and get the assigned keywords
 sentence_keywords_cleaned = process_script_cleaned(script, keyword_list)
 
@@ -526,27 +538,9 @@ for index, (sentence, keywords) in enumerate(sentence_keywords_cleaned.items()):
         
         selected_images[sentence] = best_image['image_path']
 
-# TODO: Getting the key words of the images and then ask gpt to give us what key words 
-# A sentence match best with a image keyword.
-# TODO: make a dictoinary of each image path, and its key words, that way we can match which key words 
-# Step 5: Generate Image Descriptions
-images_json_path = generate_image_descriptions(transcription_path, temp_dir)
-logging.info(f"Image descriptions saved at {images_json_path}")
-#  Match best wit hthe image, and get the image path stored in a list
-# TODO: This list we can then put in to assemble function   
+ 
 #############################################################################
-# Step 1: Generate Text Script
-prompt = """\n\n
 
-"""
-user_input = prompt.format(input_sentence="Spaceships are the future of human travel.")
-script_text = generate_text(user_input, 1000)
-script_path = os.path.join(temp_dir, "script.txt")
-with open(script_path, 'w') as f:
-    f.write(script_text)
-logging.info("Generated text script.")
-
-###########################################################################
 
 # Step 2: Generate Music Description
 # have a textual description of the music we want. 
@@ -575,11 +569,23 @@ music_file_path = f'music/{selected_file}'
 # logging.info(f"Background music saved at {music_path}")
 
 # Step 3: Generate Voice-Over Audio
-voice_over_path = generate_audio(script_text, os.path.join(temp_dir, "voice_over.wav"))
+voice_over_path = generate_audio(text = script, person=1, dir = concept)
 logging.info(f"Voice-over audio saved at {voice_over_path}")
 
 # Step 4: Transcribe Audio to Generate Subtitles
-transcription_path = transcribe_audio(voice_over_path, temp_dir)
+# Example: voice_over_path might be something like 'new_concept/new_audio.wav'
+# Join the path with the current directory for consistent path handling
+voice_over_path = os.path.join(os.getcwd(), voice_over_path)
+
+# Get just the file name (without the path) for printing purposes
+audio_file = os.path.basename(voice_over_path)
+print(f"Generated the Audio file: {audio_file}")
+
+# Generate the subtitle file path
+subtitle_file = make_file_path(concept, 'srt')  # Ensuring it's the full path
+
+# Ensure you pass the full path when calling transcribe_audio
+transcription_path = transcribe_audio(audio_file=voice_over_path, subtitle_file=subtitle_file, concept=concept)
 logging.info(f"Transcription saved at {transcription_path}")
 
 
