@@ -3,7 +3,7 @@ openai
 python-dotenv
 
 # Music Generation
-mubert
+# mubert
 
 # Audio Generation
 gtts
