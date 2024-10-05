@@ -37,10 +37,10 @@ def get_b_rolls(concept, num_b_rolls, hf_token):
     """
     # Define categories and keywords
     categories = {
-        "Nature Landscapes": ["Serenity", "Vibrant", "Expanse", "Majestic"],
-        "Urban Architecture": ["Skyline", "Symmetry", "Modern", "Monumental"],
-        "Space Exploration": ["Cosmic", "Orbital", "Astronomical", "Expedition"],
-        "Animals in the Wild": ["Predator", "Herd", "Exotic", "Natural Habitat"],
+        # "Nature Landscapes": ["Serenity", "Vibrant", "Expanse", "Majestic"],
+        # "Urban Architecture": ["Skyline", "Symmetry", "Modern", "Monumental"],
+        # "Space Exploration": ["Cosmic", "Orbital", "Astronomical", "Expedition"],
+        # "Animals in the Wild": ["Predator", "Herd", "Exotic", "Natural Habitat"],
         "Abstract Art": ["Geometric", "Colorful", "Surreal", "Chaotic"],
         "Historical Events": ["Revolutionary", "Ancient", "Conflict", "Iconic"],
         "Fantasy Worlds": ["Mystical", "Legendary", "Castle", "Sorcery"],
@@ -69,7 +69,7 @@ def get_b_rolls(concept, num_b_rolls, hf_token):
         while num_images < num_b_rolls:
             try:
                 # Progress update
-                print(f"\nStarting generation for {category} image {num_images + 1} / {num_b_rolls}")
+                # print(f"\nStarting generation for {category} image {num_images + 1} / {num_b_rolls}")
 
                 # Select the next keyword from the shuffled list (ensuring it's unique)
                 keyword = keywords.pop(0)  # Pop ensures the same keyword isn't reused
@@ -80,7 +80,9 @@ def get_b_rolls(concept, num_b_rolls, hf_token):
                 prompt = {
                     "inputs": f"A detailed image of {category.lower()} showcasing '{keyword}', {perspective}, {environment}."
                 }
-
+                print(prompt)
+                time.sleep(2)
+                num_images +=1
                 # Generate the image asset
                 # print(f"Generating image with prompt: {prompt['inputs']}...")
                 # content = generate_assets(hf_token=hf_token, payload=prompt)

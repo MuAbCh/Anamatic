@@ -54,6 +54,11 @@ from moviepy.audio.AudioClip import concatenate_audioclips
 
 import logging
 
+import os
+import random
+from pydub import AudioSegment
+from pydub.effects import normalize
+
 
 from Step_1_Text_Generation import generate_text
 from Step_2_Music_Generation import generate_music_file
@@ -64,18 +69,6 @@ from step_5_video_gen import gen_video
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-
-# Step 1 code ###########################################################
-
-
-
-
-# Step 2 code ###########################################################
-
-
-
-# Step 3 Audio Generation ###########################################################
-# Original Working `synthesize_text_to_audio` Function
 
 
 # Step 5 images:
@@ -314,8 +307,32 @@ def assemble_video(image_paths, voice_over_path, music_path, output_path):
     # Set the final video duration precisely
     video = video.set_duration(total_duration)
 
+    ### FOR THE MUSIC
+
+
+    def increase_volume_at_start(audio, duration=500):  # 500 ms = 0.5 seconds
+        initial = audio[:duration]
+        rest = audio[duration:]
+        initial = initial + 6  # Increase volume by 6 dB
+        return initial + rest
     # Add Background Music and loop it to match the video duration
     try:
+        # Determine if the file name contains "edit"
+        if "edit" in music_path.split("/")[1]:
+            # Keep only the last x seconds (where x = total_duration)
+            start_time = len(music_path) - (total_duration * 1000)  # convert seconds to milliseconds
+            edited_audio = music_path[start_time:]
+            
+            # Increase the volume at the start
+            edited_audio = increase_volume_at_start(edited_audio, 1500)
+        else:
+            # For non-edit files, keep only the first seconds (based on video length)
+            edited_audio = music_path[:total_duration * 1000]
+
+        # Save the processed audio in the variable 'music_path'
+        music_path = edited_audio
+
+
         music = AudioFileClip(music_path).volumex(0.1)  # Lower volume for background music
         # Loop the music to ensure it covers the entire video duration using afx.audio_loop
         music = music.fx(afx.audio_loop, duration=total_duration)
@@ -368,8 +385,10 @@ def assemble_video(image_paths, voice_over_path, music_path, output_path):
 
 # Load environment variables from .env file
 dotenv.load_dotenv()
+
 concept = input("Enter the topic you would like to make videos about: ")  # GET USER INPUT
-# with tempfile.TemporaryDirectory() as temp_dir:
+with tempfile.TemporaryDirectory() as temp_dir:
+
 temp_dir = "temp"
 logging.info(f"Using temporary directory: {temp_dir}")
 
@@ -388,7 +407,6 @@ Keep It Short and Concise: Remember, this is for a short video. Every sentence s
 
 Avoid Redundancy: Never repeat the same information unless it's for emphasis. Each sentence should move the script forward by introducing new ideas or facts. Do not restate information already mentioned, unless it adds value in a different context or perspective. 
 """
-
 user_prompt = f""" I need you to write a script for a YouTube Short based on the topic: {concept}. Follow these guidelines carefully:
 Duration: The entire script must be at most 225 words long.
 
@@ -406,6 +424,7 @@ No Redundancy: Avoid repeating the same information. Every sentence should intro
 """
 
 script = generate_text(prompt_system=system_prompt, prompt_user=user_prompt)
+
 
 system_prompt = " Closely follow the Users instructions."
 user_prompt = f""" Here is the current script: {script}
@@ -441,6 +460,7 @@ images_json_path = generate_image_descriptions(transcription_path, temp_dir)
 logging.info(f"Image descriptions saved at {images_json_path}")
 #  Match best wit hthe image, and get the image path stored in a list
 # TODO: This list we can then put in to assemble function   
+#############################################################################
 # Step 1: Generate Text Script
 prompt = """\n\n
 
@@ -452,17 +472,39 @@ with open(script_path, 'w') as f:
     f.write(script_text)
 logging.info("Generated text script.")
 
+###########################################################################
 
 # Step 2: Generate Music Description
 # have a textual description of the music we want. 
 # TODO: just have a couple good tracks and edit them up.
-music_description = generate_music_description(script_text, generate_text, temp_dir)
-logging.info(f"Music Description: {music_description}")
-# music_path = generate_music(music_description, temp_dir)
+# List of available music files
+music_files = [
+    "BRAZILIAN DANÇA PHONK.mp3",
+    "Double Life (From _Despicable Me 4_).mp3",
+    "edit another piano.mp3",
+    "edit_audio_2.mp3",
+    "edit_good_ending.mp3",
+    "edit_piano.mp3"
+]
+
+# Set total_duration (replace with actual video length in seconds)
+# total_duration = 60  # Example video length
+
+# Choose a random music file
+selected_file = random.choice(music_files)
+
+# Load the music file (Assuming the music files are in the current directory)
+audio = AudioSegment.from_mp3(f'music/{selected_file}')
+
+music_path= audio
+
+
+
+###########################################################################
 # logging.info(f"Background music saved at {music_path}")
 
 # Step 3: Generate Voice-Over Audio
-voice_over_path = synthesize_text_to_audio(script_text, os.path.join(temp_dir, "voice_over.wav"))
+voice_over_path = generate_audio(script_text, os.path.join(temp_dir, "voice_over.wav"))
 logging.info(f"Voice-over audio saved at {voice_over_path}")
 
 # Step 4: Transcribe Audio to Generate Subtitles
