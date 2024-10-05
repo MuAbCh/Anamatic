@@ -79,11 +79,129 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 
 
 # Step 5 images:
-def select_images():
-    # based on the genre of the concpet, 
-    # get a description based ont he prompt given, which  matches the best with an image's description
-    # and use that image for the length of the sentence. 
-    print("hello")
+
+# List of categories and keywords (for easy reference)
+categories = {
+    "Nature Landscapes": ["Serenity", "Vibrant", "Expanse", "Majestic"],
+    "Urban Architecture": ["Skyline", "Symmetry", "Modern", "Monumental"],
+    "Space Exploration": ["Cosmic", "Orbital", "Astronomical", "Expedition"],
+    "Animals in the Wild": ["Predator", "Herd", "Exotic", "Natural Habitat"],
+    "Abstract Art": ["Geometric", "Colorful", "Surreal", "Chaotic"],
+    "Historical Events": ["Revolutionary", "Ancient", "Conflict", "Iconic"],
+    "Fantasy Worlds": ["Mystical", "Legendary", "Castle", "Sorcery"],
+    "Technology and Gadgets": ["Futuristic", "Interactive", "Automated", "Wearable"],
+    "Cultural Festivals": ["Vibrant Costumes", "Fireworks", "Parades", "Rituals"],
+    "Sports in Action": ["Dynamic", "Victory", "Endurance", "Teamwork"],
+    "Programming Concepts": ["Algorithm", "Debugging", "Syntax", "Automation"]
+}
+
+# 1: Create a list of images with their associated keywords
+image_data = []
+
+# Example structure for the images; actual paths can be dynamic.
+def generate_image_metadata():
+    image_index = 0
+    for category, keywords in categories.items():
+        for i in range(3):  # 3 images per category
+            # Randomly assign 2 keywords to each image
+            img_keywords = random.sample(keywords, 2)
+            image_data.append({
+                "image_path": f"{category.replace(' ', '_')}_image_{i + 1}.png",
+                "keywords": img_keywords
+            })
+
+# Generate image metadata
+generate_image_metadata()
+
+# 2: Function to find the best match for a set of keywords
+def find_best_match(query_keywords):
+    """
+    Given a list of three keywords, find the image that matches the most keywords.
+    
+    Parameters:
+    - query_keywords (list): A list of 3 keywords.
+    
+    Returns:
+    - dict: The image data (path, keywords) of the best matching image.
+    """
+    best_match = None
+    highest_score = 0
+    
+    for image in image_data:
+        # Calculate how many keywords match
+        match_count = len(set(query_keywords).intersection(image['keywords']))
+        
+        if match_count > highest_score:
+            best_match = image
+            highest_score = match_count
+    
+    if best_match:
+        return best_match
+    else:
+        return None
+    
+# Function to get a default image if no best match is found
+def get_default_image():
+    return random.choice(image_data)  # Return a random image from the dataset
+
+# Assuming you already have the function `generate_text()` from your previous code
+# Sample list of keywords (You can modify it with the actual list of 44 keywords)
+keyword_list = [
+    "Serenity", "Vibrant", "Expanse", "Majestic", "Skyline", "Symmetry", "Modern", "Monumental",
+    "Cosmic", "Orbital", "Astronomical", "Expedition", "Predator", "Herd", "Exotic", "Natural Habitat",
+    "Geometric", "Colorful", "Surreal", "Chaotic", "Revolutionary", "Ancient", "Conflict", "Iconic",
+    "Mystical", "Legendary", "Castle", "Sorcery", "Futuristic", "Interactive", "Automated", "Wearable",
+    "Vibrant Costumes", "Fireworks", "Parades", "Rituals", "Dynamic", "Victory", "Endurance", "Teamwork",
+    "Algorithm", "Debugging", "Syntax", "Automation"
+]
+
+# Step 1: Function to split the script into sentences
+def split_script_into_sentences(script):
+    sentences = re.split(r'(?<=[.!?]) +', script)
+    return sentences
+
+# Step 2: Generate keywords for each sentence by calling the `generate_text()` function
+def assign_keywords_to_sentence(sentence, keyword_list, model="llama-3.1-70b-versatile", temperature=0.00):
+    system_prompt = "You are tasked with assigning two relevant keywords from a predefined list to the given sentence."
+    user_prompt = f"""Here is the list of available keywords: {', '.join(keyword_list)}. 
+    Assign two keywords from this list that best describe the following sentence: "{sentence}"."""
+    
+    keywords = generate_text(system_prompt, user_prompt, self_model=model, self_temperature=temperature)
+    
+    # Assuming the model returns the keywords separated by commas or in some parsable format
+    assigned_keywords = keywords.split(", ")
+    return assigned_keywords
+
+# Step 3: Process the entire script
+# Function to clean up the output from generate_text and extract only keywords
+def clean_keywords(assigned_keywords):
+    # Join the list of assigned keywords into a single string
+    joined_keywords = ' '.join(assigned_keywords)
+    
+    # Use regex to extract only words that match the known keyword list
+    # Here, we're assuming that keywords are proper nouns (capitalize them)
+    cleaned_keywords = re.findall(r'\b[A-Z][a-zA-Z]*\b', joined_keywords)
+
+    return cleaned_keywords
+
+# Process the entire script with cleaned keywords
+def process_script_cleaned(script, keyword_list):
+    sentences = split_script_into_sentences(script)
+    sentence_keywords = {}
+
+    for i, sentence in enumerate(sentences):
+        # Get raw keywords from generate_text
+        assigned_keywords_raw = assign_keywords_to_sentence(sentence, keyword_list)
+        
+        # Clean the keywords by removing the extra words
+        cleaned_keywords = clean_keywords(assigned_keywords_raw)
+        
+        sentence_keywords[sentence] = cleaned_keywords
+
+    return sentence_keywords
+
+    
+
 
 
 def assemble_video(image_paths, voice_over_path, music_path, output_path):
@@ -288,6 +406,32 @@ No Redundancy: Avoid repeating the same information. Every sentence should intro
 """
 
 script = generate_text(prompt_system=system_prompt, prompt_user=user_prompt)
+
+system_prompt = " Closely follow the Users instructions."
+user_prompt = f""" Here is the current script: {script}
+Remove any headings that say "Here is the script" etc. The script should start right away.
+I dont want the "visual descriptions " in the sript, the TTS model will speak the script as it is written.
+Also remove the seconds of how long the sentence is, we will calculate that on our own"""
+
+script = generate_text(prompt_system=system_prompt, prompt_user=user_prompt)
+
+# Process the script and get the assigned keywords
+sentence_keywords_cleaned = process_script_cleaned(script, keyword_list)
+
+selected_images = {}
+
+for index, (sentence, keywords) in enumerate(sentence_keywords_cleaned.items()):
+    if index == 0 or index == len(sentence_keywords_cleaned) - 1:
+        # For the first and last sentences, no image is selected
+        selected_images[sentence] = None
+    else:
+        best_image = find_best_match(keywords)
+        
+        # If no best match found, get a default image
+        if not best_image:
+            best_image = get_default_image()
+        
+        selected_images[sentence] = best_image['image_path']
 
 # TODO: Getting the key words of the images and then ask gpt to give us what key words 
 # A sentence match best with a image keyword.
