@@ -90,14 +90,15 @@ def generate_music_file(prompt, make_instrumental=False, wait_audio=False, retri
         Returns a tuple containing the paths of the downloaded audio files (audio_1.mp3, audio_2.mp3).
         If audio generation fails or times out, it returns None.
     """
-    
+    a = get_quota_information()
+    print(a)
     # Generate audio based on the provided prompt
     data = generate_audio_by_prompt({
         "prompt": prompt,
         "make_instrumental": make_instrumental,
         "wait_audio": wait_audio
     })
-    import ipdb; ipdb.set_trace()
+    # import ipdb; ipdb.set_trace()
     # Combine the IDs of generated audio
     ids = f"{data[0]['id']},{data[1]['id']}"
     
@@ -136,9 +137,9 @@ if __name__ == '__main__':
     Again, HAS TO BE A comma separated description
 
 '''
-    user_prompt = '''Can you give me a description that is 200 characters, including spaces for a song prompt for sonu.ai. You can't use 
-                    the artist name so describe the vocals too. Make the song upbeat at the start, mellow in the middle, and then upbeat again at the end. 
-                    The song must be 60 seconds long'''
+    user_prompt = '''Give me a description of a hip hop rap song beat, You can't use 
+                    the artist name so describe the vocals too. Describe the song to generate hype, describe the vocals to be soft.
+                    Describe how Snoopy dog does with, with a special brand of Snoopy Doggy Dawg.'''
     
 
 
@@ -148,7 +149,7 @@ if __name__ == '__main__':
     
     output_directory = "music"  # Specify your desired directory here
     
-    audio_files = generate_music_file(prompt_text, make_instrumental=True, wait_audio=False, output_dir=output_directory)
+    audio_files = generate_music_file(prompt_text, make_instrumental=False, wait_audio=False, output_dir=output_directory)
 
     if audio_files:
         print(f"Audio files downloaded: {audio_files[0]}")
