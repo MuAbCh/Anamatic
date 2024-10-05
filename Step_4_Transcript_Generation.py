@@ -87,64 +87,71 @@ def make_file_path(concept, extension):
 
 
 def transcribe_audio(audio_file_new, subtitle_file, style='Default'):
-    
-    # loading up the models:
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-    batch_size = 16 # reduce if low on GPU mem
+
+    batch_size = 16
+    device = "cuda"
+    whisper_model = whisperx.load_model("large-v2", device)
     compute_type = "float16" # change to "int8" if low on GPU mem (may reduce accuracy)
 
 
 
-    import ipdb; ipdb.set_trace()
+
     if os.path.exists(audio_file_new):
-        whisper_model = whisperx.load_model("large-v2", device, compute_type=compute_type)
         audio = whisperx.load_audio(audio_file_new)
         result = whisper_model.transcribe(audio, batch_size=batch_size)
-        language_code = result["language"]
+        language_code=result["language"]
 
-        # Load alignment model
-        model_a, metadata = whisperx.load_align_model(language_code=language_code, device=device)
+
+        
+        model_a, metadata = whisperx.load_align_model(language_code=result["language"], device=device)
         result = whisperx.align(result["segments"], model_a, metadata, audio, device, return_char_alignments=False)
         result['language'] = language_code
-        
-         # Write subtitles
-        import ipdb; ipdb.set_trace()
-        # check what is this
         vtt_writer = get_writer("srt", f'{concept}/')
-        # print(f"This is the vtt_writer thingi: {vtt_writer}")
-        vtt_writer(result, audio_file_new, {"max_line_width": 15, "max_line_count": 1, "highlight_words": True})
-        
-        # Save subtitle file
-        file_name = f'{concept}_new.srt'
+        vtt_writer(
+            result,
+            subtitle_file, #changed this from audio_file_new
+            {"max_line_width": 15, "max_line_count": 1, "highlight_words": True},
+        )
+
+
+        file_name = f'{concept.replace(" ","_")}_new.srt'
+
+
         try:
             # joins the input file is the one being read and processed. the file_name is the one being outputted.
+
             ffmpeg.input(subtitle_file).output(file_name).overwrite_output().run()
         
         except ffmpeg.Error as e:
-            print(f"An error occurred: {e.stderr.decode()}")
+            # print(f"An error occurred: {e.stderr.decode()}")
+            print("error")
 
+        # (ffmpeg.input(os.path.join(concept.replace(" ","_"),file_name)).output(subtitle_file).run())
 
+        # Usage
+        # ass_name = os.path.join(concept.replace(" ","_"),f"{concept.replace(" ","_")}.ass")
+        # we define the styles here:
         new_styles = {
-        "Default": {
-            1: "Arial",             # Fontname
-            2: "12",                # Fontsize
-            3: "&H00FF00FF",        # PrimaryColour (green)
-            4: "&H000000FF",        # SecondaryColour
-            5: "&H00000000",        # OutlineColour
-            6: "&H64000000",        # BackColour
-            16: "2",                # Outline (thickness)
-            17: "1"                 # Shadow (depth)
-        
-        },}
+    "Default": {
+        1: "Arial",             # Fontname
+        2: "12",                # Fontsize
+        3: "&H00FF00FF",        # PrimaryColour (green)
+        4: "&H000000FF",        # SecondaryColour
+        5: "&H00000000",        # OutlineColour
+        6: "&H64000000",        # BackColour
+        16: "2",                # Outline (thickness)
+        17: "1"                 # Shadow (depth)
+    },
+}
         update_ass_styles(subtitle_file, subtitle_file, new_styles)
         remove_overlapping_subtitles(subtitle_file)
 
-
+# THIS IS HOW YOU CALL THE FUNCTION
 if __name__ == '__main__':
-    concept = "not test"
+    concept = "not test" # FROM THE USER
     concept = concept.replace(" ","_")
     # audio_file = make_file_path(concept, 'wav')
     audio_file = 'new_srt.wav'
     subtitle_file = make_file_path(concept, 'srt')       # Path to the ASS subtitle file
-    output_file = make_file_path(concept, 'mp4')         # Path to the output video file
+    # output_file = make_file_path(concept, 'mp4')         # Path to the output video file
     transcribe_audio(audio_file_new=audio_file, subtitle_file=subtitle_file)
