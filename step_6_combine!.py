@@ -57,7 +57,10 @@ import logging
 
 from Step_1_Text_Generation import generate_text
 from Step_2_Music_Generation import generate_music_file
-from Step_3_Audio_Generation import gen
+from Step_3_Audio_Generation import generate_audio
+from Step_4_Transcript_Generation import transcribe_audio
+from step_5_img_gen import get_b_rolls
+from step_5_video_gen import 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
