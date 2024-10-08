@@ -1,0 +1,39 @@
+{
+    "script": "Welcome to the cosmos, where human ingenuity meets the vastness of space. Today, we're exploring the incredible world of space ships.\n\nFrom the early days of space exploration to the present, space ships have come a long way. The first space ship, Sputnik 1, was launched by the Soviet Union in 1957. It was a simple satellite that paved the way for future space travel.\n\nFast forward to the Apollo missions, where NASA's Saturn V rocket took astronauts to the moon. This massive space ship stood over 36 stories tall and weighed over 6.5 million pounds.\n\nToday, space ships are more advanced than ever. Private companies like SpaceX and Blue Origin are pushing the boundaries of space travel. With reusable rockets and state-of-the-art technology, the possibilities are endless.\n\nAs we continue to explore the cosmos, space ships will play a vital role in our journey. From Mars missions to deep space exploration, the future of space travel is exciting and full of possibilities.\n\nThanks for joining us on this journey through the world of space ships. Until next time, keep looking up at the stars.",
+    "sentence_keywords": {
+        "Welcome to the cosmos, where human ingenuity meets the vastness of space. Today, we're exploring the incredible world of space ships.": [
+            "Cosmic",
+            "Expedition"
+        ],
+        "": [],
+        "From the early days of space exploration to the present, space ships have come a long way. The first space ship, Sputnik 1, was launched by the Soviet Union in 1957. It was a simple satellite that paved the way for future space travel.": [
+            "Orbital",
+            "Expedition"
+        ],
+        "Fast forward to the Apollo missions, where NASA's Saturn V rocket took astronauts to the moon. This massive space ship stood over 36 stories tall and weighed over 6.5 million pounds.": [
+            "Monumental",
+            "Cosmic"
+        ],
+        "Today, space ships are more advanced than ever. Private companies like SpaceX and Blue Origin are pushing the boundaries of space travel. With reusable rockets and state-of-the-art technology, the possibilities are endless.": [
+            "Futuristic",
+            "Orbital"
+        ],
+        "As we continue to explore the cosmos, space ships will play a vital role in our journey. From Mars missions to deep space exploration, the future of space travel is exciting and full of possibilities.": [
+            "Cosmic",
+            "Expedition"
+        ],
+        "Thanks for joining us on this journey through the world of space ships. Until next time, keep looking up at the stars.": [
+            "Cosmic",
+            "Expedition"
+        ]
+    },
+    "selected_images": {
+        "Welcome to the cosmos, where human ingenuity meets the vastness of space. Today, we're exploring the incredible world of space ships.": "Space_Exploration/Space_Exploration_video_1.mp4",
+        "": "Abstract_Art/Abstract_Art_image_2.png",
+        "From the early days of space exploration to the present, space ships have come a long way. The first space ship, Sputnik 1, was launched by the Soviet Union in 1957. It was a simple satellite that paved the way for future space travel.": "Space_Exploration/Space_Exploration_image_1.png",
+        "Fast forward to the Apollo missions, where NASA's Saturn V rocket took astronauts to the moon. This massive space ship stood over 36 stories tall and weighed over 6.5 million pounds.": "Urban_Architecture/Urban_Architecture_image_1.png",
+        "Today, space ships are more advanced than ever. Private companies like SpaceX and Blue Origin are pushing the boundaries of space travel. With reusable rockets and state-of-the-art technology, the possibilities are endless.": "Space_Exploration/Space_Exploration_image_2.png",
+        "As we continue to explore the cosmos, space ships will play a vital role in our journey. From Mars missions to deep space exploration, the future of space travel is exciting and full of possibilities.": "Space_Exploration/Space_Exploration_image_1.png",
+        "Thanks for joining us on this journey through the world of space ships. Until next time, keep looking up at the stars.": "Space_Exploration/Space_Exploration_video_1.mp4"
+    }
+}

@@ -73,7 +73,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 
 
 # Step 5 images:
-
+# import ipdb; ipdb.set_trace()
 # List of categories and keywords (for easy reference)
 categories = {
     "Nature Landscapes": ["Serenity", "Vibrant", "Expanse", "Majestic"],
@@ -92,7 +92,7 @@ categories = {
 # 1: Create a list of images with their associated keywords
 image_data = []
 video_data = []
-
+# import ipdb; ipdb.set_trace()
 # Example structure for the images; actual paths can be dynamic.
 def generate_image_metadata():
     image_index = 0
@@ -100,20 +100,24 @@ def generate_image_metadata():
         for i in range(3):  # 3 images per category
             # Randomly assign 2 keywords to each image
             img_keywords = random.sample(keywords, 2)
+            formatted_category = category.replace(' ', '_')
             image_data.append({
-                "image_path": f"{category}/{category.replace(' ', '_')}_image_{i + 1}.png",
+                "image_path": f"{formatted_category}/{formatted_category}_image_{i + 1}.png",
                 "keywords": img_keywords
             })
-
 def generate_video_metadata():
     video_index = 0
     for category, keywords in categories.items():
         # Randomly assign 2 keywords to each video
         vid_keywords = random.sample(keywords, 2)
+        formatted_category = category.replace(' ', '_')
         video_data.append({
-            "video_path": f"{category}/{category.replace(' ', '_')}_video_{1}.mp4",
+            "video_path": f"{formatted_category}/{formatted_category}_video_1.mp4",
             "keywords": vid_keywords
         })
+    # import ipdb; ipdb.set_trace()
+    # print("tHIS IS THE VIDEO DATA FILE:::")
+    # print(video_data)
 
 
 # Generate image metadata
@@ -221,13 +225,15 @@ def clean_keywords(assigned_keywords):
 
 # Process the entire script with cleaned keywords
 def process_script_cleaned(script, keyword_list):
-    sentences = split_script_into_sentences(script)
+    # import ipdb; ipdb.set_trace()
+    # sentences = split_script_into_sentences(script)
+    sentences = script.split("\n")
     sentence_keywords = {}
 
     for i, sentence in enumerate(sentences):
         # Get raw keywords from generate_text
         assigned_keywords_raw = assign_keywords_to_sentence(sentence, keyword_list)
-        
+        # import ipdb; ipdb.set_trace()
         # Clean the keywords by removing the extra words
         cleaned_keywords = clean_keywords(assigned_keywords_raw)
         
@@ -242,7 +248,7 @@ import logging
 
 
 
-def assemble_video(image_paths, voice_over_path, music_path, output_path):
+def assemble_vide(image_paths, voice_over_path, music_path, output_path):
     """
     Assembles the final video by stitching together images with fade transitions,
     adding audio (voice-over with added silence and looping background music),
@@ -263,27 +269,30 @@ def assemble_video(image_paths, voice_over_path, music_path, output_path):
 
     # Load Voice-Over Audio first to determine its duration
     try:
+
         voice_over = AudioFileClip(voice_over_path)
+        print(f"This is the voice_overe {voice_over}: voice_over_path {voice_over_path}")
     except Exception as e:
         logging.error(f"Failed to load voice-over audio: {e}")
         voice_over = None
 
-    # Add 1-second silence to the end of the voice-over
-    if voice_over:
-        try:
-            # Create a 1-second silent audio clip
-            silence = AudioFileClip(lambda t: 0, duration=1).set_fps(voice_over.fps)
-            # Concatenate the silence to the voice-over
-            voice_over_extended = concatenate_audioclips([voice_over, silence])
-        except Exception as e:
-            logging.error(f"Failed to add silence to voice-over: {e}")
-            voice_over_extended = voice_over  # Fallback to original voice_over
-    else:
-        voice_over_extended = None
-
+    # # Add 1-second silence to the end of the voice-over
+    # if voice_over:
+    #     try:
+    #         # Create a 1-second silent audio clip
+    #         silence = AudioFileClip(lambda t: 0, duration=1).set_fps(voice_over.fps)
+    #         # Concatenate the silence to the voice-over
+    #         voice_over_extended = concatenate_audioclips([voice_over, silence])
+    #     except Exception as e:
+    #         logging.error(f"Failed to add silence to voice-over: {e}")
+    #         voice_over_extended = voice_over  # Fallback to original voice_over
+    # else:
+    #     voice_over_extended = None
     # Determine the total duration based on voice-over
-    if voice_over_extended:
-        total_duration = voice_over_extended.duration
+    if voice_over:
+        total_duration = voice_over.duration
+        print(f"This is the voice_over duration: {voice_over.duration}: total_duratoin: {total_duration}")
+
     else:
         total_duration = 0
 
@@ -299,8 +308,9 @@ def assemble_video(image_paths, voice_over_path, music_path, output_path):
     #     except Exception as e:
     #         logging.error(f"Failed to create ImageClip for {image_path}: {e}")
     previous_time = 0
-
-    for index, image_path in enumerate(image_paths):
+  
+    # import ipdb; ipdb.set_trace()
+    for index, (sent,image_path) in enumerate(image_paths.items()):
         # Determine the duration for each clip (image or video)
         clip_duration = total_duration / len(image_paths)
 
@@ -312,12 +322,15 @@ def assemble_video(image_paths, voice_over_path, music_path, output_path):
                 logging.error(f"Failed to load video clip: {e}")
         
         else:
-            try:
-                image_clip = ImageClip(image_path).set_duration(clip_duration)
-                clips.append(image_clip)
-            except Exception as e:
-                logging.error(f"Failed to create ImageClip for {image_path}: {e}")
+            # import ipdb; ipdb.set_trace()
+            if index != 0 or len(image_paths) - 1:
+                try:
+                    image_clip = ImageClip(image_path).set_duration(clip_duration)
+                    clips.append(image_clip)
+                except Exception as e:
+                    logging.error(f"Failed to create ImageClip for {image_path}: {e}")
 
+        # previous_time = end_time  # Update previous_time for the next iteration
 
     if not clips:
         logging.error("No valid image clips were created.")
@@ -348,6 +361,7 @@ def assemble_video(image_paths, voice_over_path, music_path, output_path):
     try:
         # Load the music file using pydub
         audio = AudioSegment.from_mp3(music_path)
+        print(f"This is the audio path: {audio}")
 
         # Determine if the file name contains "edit"
         if "edit" in os.path.basename(music_path):
@@ -360,25 +374,30 @@ def assemble_video(image_paths, voice_over_path, music_path, output_path):
             # For non-edit files, keep only the first seconds (based on total video duration)
             edited_audio = audio[:total_duration * 1000]
 
+        print(f" this is the edited_path: {edited_audio}")
         # Export the edited audio to a temporary file
         temp_music_path = "temp_edited_music.mp3"
-        edited_audio.export(temp_music_path, format="mp3")
+        edited_audio.export(temp_music_path, format=".mp3")
 
         # Load the edited music with moviepy
         music = AudioFileClip(temp_music_path).volumex(0.1)  # Lower volume for background music
-
+        print(f"this is the path to music: {music}")
         # Loop the music to ensure it covers the entire video duration
         music = music.fx(afx.audio_loop, duration=total_duration)
+        print(f"this is the AFTER editing the music path: {music}")
 
     except Exception as e:
         logging.error(f"Failed to load or loop background music: {e}")
         music = None
 
     # Combine Voice-Over and Background Music
-    if voice_over_extended and music:
-        final_audio = CompositeAudioClip([voice_over_extended, music])
-    elif voice_over_extended:
-        final_audio = voice_over_extended
+
+    print(f"This is the voice_over {voice_over}: music {music}")
+
+    if voice_over and music:
+        final_audio = CompositeAudioClip([voice_over, music])
+    elif voice_over:
+        final_audio = voice_over
     elif music:
         final_audio = music
     else:
@@ -409,15 +428,157 @@ def assemble_video(image_paths, voice_over_path, music_path, output_path):
         del video
         if voice_over:
             del voice_over
-        if voice_over_extended:
-            del voice_over_extended
-        if music:
-            del music
-        if final_audio:
-            del final_audio
-        gc.collect()
+        # if voice_over_extended:
+        #     del voice_over_extended
+        # if music:
+        #     del music
+        # if final_audio:
+        #     del final_audio
+        # gc.collect()
 # Load environment variables from .env file
 
+import shutil
+from pydub import AudioSegment
+
+def assemble_video(image_paths, voice_over_path, music_path, output_path, concept):
+    """
+    Assembles the final video by stitching together images with fade transitions,
+    adding audio (voice-over with added silence and looping background music),
+    and overlaying subtitles.
+
+    Parameters:
+    - image_paths (list): List of paths to the generated images.
+    - voice_over_path (str): Path to the voice-over audio file.
+    - music_path (str): Path to the background music audio file.
+    - output_path (str): Path to save the final video.
+    - concept (str): The concept directory to save the final audio file.
+    
+    Returns:
+    - None
+    """
+    crossfade_duration = 0  # Adjust as needed
+
+    # Load the voice-over
+    try:
+        voice_over = AudioFileClip(voice_over_path)
+        logging.info(f"This is the voice_over path: {voice_over_path}")
+    except Exception as e:
+        logging.error(f"Failed to load voice-over audio: {e}")
+        voice_over = None
+
+    # Determine the total duration from the voice-over
+    if voice_over:
+        total_duration = voice_over.duration
+        logging.info(f"Voice-over duration: {total_duration}")
+    else:
+        logging.error("No voice-over audio found. Aborting.")
+        return
+
+    # Create image/video clips
+    clips = []
+    for index, (sent, image_path) in enumerate(image_paths.items()):
+        clip_duration = total_duration / len(image_paths)
+        
+        if index == 0 or index == len(image_paths) - 1:
+            try:
+                video_clip = VideoFileClip(image_path).set_duration(clip_duration)
+                clips.append(video_clip)
+            except Exception as e:
+                logging.error(f"Failed to load video clip: {e}")
+        else:
+            try:
+                image_clip = ImageClip(image_path).set_duration(clip_duration)
+                clips.append(image_clip)
+            except Exception as e:
+                logging.error(f"Failed to create ImageClip for {image_path}: {e}")
+
+    if not clips:
+        logging.error("No valid image clips were created.")
+        return
+
+    # Concatenate image clips
+    try:
+        video = concatenate_videoclips(clips, method="compose", padding=-crossfade_duration)
+    except Exception as e:
+        logging.error(f"Failed to concatenate video clips: {e}")
+        return
+
+    video = video.set_duration(total_duration)
+
+    # Process and loop the background music
+    # try:
+    #     audio = AudioSegment.from_mp3(music_path)
+    #     logging.info(f"Loaded background music: {music_path}")
+
+    #     if "edit" in os.path.basename(music_path):
+    #         start_time = len(audio) - (total_duration * 1000)
+    #         edited_audio = audio[start_time:]
+    #         edited_audio = increase_volume_at_start(edited_audio, 1500)
+    #     else:
+    #         edited_audio = audio[:total_duration * 1000]
+
+    #     # Save the edited audio in the concept directory
+    #     concept_music_path = os.path.join(concept, f"{os.path.basename(music_path)}_edited.mp3")
+    #     edited_audio.export(concept_music_path, format="mp3")
+    #     logging.info(f"Edited music saved at: {concept_music_path}")
+
+    #     # Load the music into moviepy and loop it
+    #     music = AudioFileClip(concept_music_path).volumex(0.1)
+    #     music = music.fx(afx.audio_loop, duration=total_duration)
+    # except Exception as e:
+    #     logging.error(f"Failed to load or loop background music: {e}")
+    #     music = None
+
+    # Combine the voice-over and background music
+    # if voice_over and music:
+    #     final_audio = CompositeAudioClip([voice_over, music])
+    # elif voice_over:
+    #     final_audio = voice_over
+    # elif music:
+    #     final_audio = music
+    # else:
+    #     final_audio = None
+
+    try:
+        music = AudioFileClip(music_path).volumex(0.1)  # Lower volume for background music
+        # Loop the music to ensure it covers the entire video duration using afx.audio_loop
+        music = music.fx(afx.audio_loop, duration=total_duration)
+    except Exception as e:
+        logging.error(f"Failed to load or loop background music: {e}")
+        music = None
+
+    if voice_over and music:
+        final_audio = CompositeAudioClip([voice_over, music])
+    elif voice_over:
+        final_audio = voice_over
+    elif music:
+        final_audio = music
+    else:
+        final_audio = None
+
+    if final_audio:
+        video = video.set_audio(final_audio)
+    else:
+        logging.warning("No audio was set for the video.")
+
+    # Write the final video to the output path
+    try:
+        video.write_videofile(
+            output_path,
+            codec="libx264",
+            audio_codec="aac",
+            fps=24,
+            threads=4,
+            preset='medium',
+            bitrate="5000k"
+        )
+        logging.info(f"Final video saved at {output_path}")
+    except Exception as e:
+        logging.error(f"Failed to write the final video file: {e}")
+    finally:
+        del video
+        if voice_over:
+            del voice_over
 
 # def update_highlight_times(srt_file, lines_to_highlight,):
 #     """
@@ -585,19 +746,19 @@ system_prompt = " Closely follow the Users instructions."
 user_prompt = f""" Here is the current script: {script}
 Remove any headings that say "Here is the script" etc. The script should start right away.
 I dont want the "visual descriptions " in the sript, the TTS model will speak the script as it is written.
-Also remove the seconds of how long the sentence is, we will calculate that on our own"""
+Also remove the seconds of how long the sentence is, we will calculate that on our own. Make sure that the script does not have any fancy formatting. each new line should be seperated by just one \\n, no fancy spacings etc etc"""
 
 script = generate_text(prompt_system=system_prompt, prompt_user=user_prompt)
 
 
 voice_over_path = generate_audio(text = script, person=1, dir = concept)
 
-
+# import ipdb; ipdb.set_trace()
 #########################################################################################
 # Process the script and get the assigned keywords
 sentence_keywords_cleaned = process_script_cleaned(script, keyword_list)
 
-sentences_array = split_script_into_sentences(script)
+sentences_array = (script).split('\n')
 selected_images = {}
 
 for index, (sentence, keywords) in enumerate(sentence_keywords_cleaned.items()):
@@ -606,6 +767,7 @@ for index, (sentence, keywords) in enumerate(sentence_keywords_cleaned.items()):
         best_video = find_best_video_match(keywords)
         if not best_video:
             best_video = get_default_video()
+        # import ipdb; ipdb.set_trace()     
         selected_images[sentence] = best_video['video_path']
     else:
         best_image = find_best_match(keywords)
@@ -640,7 +802,7 @@ music_files = [
 selected_file = random.choice(music_files)
 
 music_file_path = f'music/{selected_file}'
-
+print(f"Fthis is the music file path: {music_file_path}")
 
 
 ###########################################################################
@@ -686,14 +848,14 @@ from moviepy.config import change_settings
 change_settings({"IMAGEMAGICK_BINARY": "/usr/bin/convert"})
 
 # Step 9: Assemble the Video
-# subtitles_path = os.path.join(temp_dir, "subtitles.json")
+#  Modify the video generation process:
+output_path = os.path.join(concept, f"{concept}_final.mp4")
+assemble_video(selected_images, voice_over_path, music_file_path, output_path, concept)
 
-assemble_video(selected_images, voice_over_path, music_file_path, concept)
-logging.info(f"Final video saved at {concept}")
-
-# Move the final video to the current directory
-final_output = os.path.join(os.getcwd(), "final_video.mp4")
-shutil.move(concept, final_output)
-logging.info(f"Video moved to {final_output}")
-
-logging.info("All done!")
+# Moving the final video to the current directory if needed
+final_output = os.path.join(os.getcwd(), f"{concept}_final.mp4")
+if os.path.exists(output_path):
+    shutil.move(output_path, final_output)
+    logging.info(f"Video moved to {final_output}")
+else:
+    logging.error(f"Final video not found at {output_path}")

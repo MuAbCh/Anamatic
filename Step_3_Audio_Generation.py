@@ -36,7 +36,7 @@ def generate_audio(text, dir, person = 1,):
     os.makedirs(dir, exist_ok=True)  # Ensure the directory is created before using it
 
     # Generate the file name based on the directory and person identifier
-    fileName = os.path.join(dir, f"{dir}_{person}.wav")  # Combine directory and file name
+    fileName = os.path.join(dir, f"{dir}_{person}.mp3")  # Combine directory and file name
 
     # Check if the file exists, and if not, write the audio content
     if not os.path.exists(fileName):
